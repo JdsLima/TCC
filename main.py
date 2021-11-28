@@ -26,11 +26,11 @@ class formateText():
     def __init__(self, text) -> None:
         self.text = text
 
-    command_list = [
-        "negrito", 
-        "itálico", 
-        "sublinhado"
-    ]
+    command_flags = dict(
+        negrito = False, 
+        itálico = False, 
+        sublinhado = False
+    )
 
     command_action = dict(
         negrito = ["[b]", "[/b]"],
@@ -39,16 +39,23 @@ class formateText():
     )
 
     def formate(self):
+        commandKeys = self.command_flags.keys()
+
         for i, str in enumerate(self.text):
             if "Yumi" in str and i + 1 < (len(self.text) - 1):
                 command = self.text[i + 1]
-                if (command in self.command_list):
+                if command in commandKeys:
                     del(self.text[i])
                     self.text[i] = self.command_action.get(self.text[i])[0]
-                elif (command == "fim" and self.text[i + 2] in self.command_list):
-                    del(self.text[i + 1])
-                    del(self.text[i])
-                    self.text[i] = self.command_action.get(self.text[i])[1]
+                    self.command_flags[command] = True
+
+                elif command == "fim":
+                    command = self.text[i + 2]
+                    if command in commandKeys and self.command_flags[command]:
+                        del(self.text[i + 1])
+                        del(self.text[i])
+                        self.text[i] = self.command_action.get(self.text[i])[1]
+                        self.command_flags[command] = False
 
         return(" ".join(self.text))
 

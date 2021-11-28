@@ -1,21 +1,26 @@
-## install modules
+## instalar os módulos
 
-### install pip
+### instala o pip
 ```bash
 sudo apt install python3-pip
 ```
 
-### Setup terminal and pip
+### configura o terminal e o pip
 ```bash
 python3 -m pip install --upgrade pip setuptools virtualenv
 ```
 
-### install kivy
+### instala o kivy
 ```bash
 pip install kivy[base]
 ```
 
-### install xclip
+### instala a biblioteca de reonhecimento de fala
 ```bash
-sudo apt-get install xclip
+pip install SpeechRecognition
+```
+
+### instala o xclip
+```bash
+sudo apt install xclip
 ```
