@@ -1,0 +1,164 @@
+#:kivy 2.0.0
+
+<Manager>:
+    Menu:
+        name: "menu"
+
+    TextBoxContainer:
+        name: "textBoxContainer"
+
+    Instructions:
+        name: "instructions"
+
+<Menu>:
+    BoxLayout:
+        orientation: "vertical"
+        padding: root.width*0.30, root.height*0.15
+        spacing: "25dp"
+        canvas:
+            Color:
+                rgba: 0.82, 0.82, 0.82, 1
+            Rectangle:
+                size: self.size
+                pos: self.pos
+        Image:
+            source: "icons/logo.png"
+            size_hint_y: 3
+            allow_stretch: True
+        RoundButton:
+            text: "Transcrição de texto"
+            size_hint_y: None
+            height: "60sp"
+            on_release: app.root.current = "textBoxContainer"
+
+        RoundButton:
+            text: "Instruções de uso"
+            size_hint_y: None
+            height: "60sp"
+            on_release: app.root.current = "instructions"
+
+        RoundButton:
+            text: "Sair"
+            size_hint_y: None
+            height: "60sp"
+            on_release: root.confirm_exit()
+
+<TextBoxContainer>:
+    BoxLayout:
+        orientation: 'vertical'
+        canvas:
+            Color:
+                rgba: 1, 1, 1, 1
+            Rectangle:
+                size: self.size
+                pos: self.pos
+        ActionBar:
+            ActionView:
+                ActionPrevious:
+                    app_icon: "icons/logo.png"
+                    app_icon_width: 90
+                    markup: True
+                    title: "[b]Transcrição de texto[/b]"
+                    on_release: app.root.current = "menu"
+                ActionButton:
+                    markup: True
+                    text: "[b]Teste[/b]"
+                ActionSeparator:
+                ActionButton:
+                    markup: True
+                    text: "[b]Sair[/b]"
+                    on_release: app.root.get_screen("menu").confirm_exit()
+        ScrollView:
+            BoxLayout:
+                id: textBox
+                orientation: "vertical"
+                size_hint_y: None
+                height: self.minimum_height
+        BoxLayout:
+            # canvas:
+            #     Color:
+            #         rgba: 0, .6, .2, 1
+            #     Rectangle:
+            #         pos: self.pos
+            #         size: self.size
+            padding: self.width/2 - 50, 10, 30, 10
+            size_hint_y: None
+            height: "60sp"
+            RoundButton:
+                id: mic
+                text: "Iniciar"
+                size_hint_x: None
+                width: 100
+                on_release: root.initRecorder()
+            # Button:
+            #     id: mic
+            #     background_normal: "icons/microfone.png"
+            #     border: 0, 0, 0, 0
+            #     size_hint_x: None
+            #     width: "60sp"
+            #     on_release: root.listen()
+
+<Instructions>:
+    BoxLayout:
+        orientation: 'vertical'
+        canvas:
+            Color:
+                rgba: 1, 1, 1, 1
+            Rectangle:
+                size: self.size
+                pos: self.pos
+        ActionBar:
+            ActionView:
+                ActionPrevious:
+                    app_icon: "icons/logo.png"
+                    app_icon_width: 90
+                    markup: True
+                    title: "[b]Instruções de uso[/b]"
+                    on_release: app.root.current = "menu"
+                ActionSeparator:
+                ActionButton:
+                    markup: True
+                    text: "[b]Sair[/b]"
+                    on_release: app.root.get_screen("menu").confirm_exit()
+        ScrollView:
+            BoxLayout:
+                id: textBoxIntructions
+                orientation: "vertical"
+                size_hint_y: None
+                height: self.minimum_height
+
+<LabelBox>:
+    markup: True
+    size_hint: (1, None)
+    font_size: sp(15)
+    color: (0, 0, 0 ,1)
+
+<CustomDropDown>:
+    Button:
+        text: 'My first Item'
+        size_hint_y: None
+        height: 44
+        on_release: root.select('item1')
+    Label:
+        text: 'Unselectable item'
+        size_hint_y: None
+        height: 44
+    Button:
+        text: 'My second Item'
+        size_hint_y: None
+        height: 44
+        on_release: root.select('item2')
+
+# <RoundButton@ButtonBehavior+Label>:
+#     canvas.before:
+#         Color:
+#             rgba: 0.1, 0.5, 0.8,1
+#         Ellipse:
+#             pos: self.pos
+#             size: self.height, self.height
+#         Ellipse:
+#             pos: self.x + self.width - self.height, self.y
+#             size: self.height, self.height
+#         Rectangle:
+#             pos: self.x + self.height /2.0, self.y
+#             size: self.width - self.height, self.height
