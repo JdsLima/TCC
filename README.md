@@ -15,7 +15,7 @@ python3 -m pip install --upgrade pip setuptools virtualenv
 pip install kivy[base]
 ```
 
-### instala a biblioteca de reonhecimento de fala
+### instala a biblioteca de reconhecimento de fala
 ```bash
 pip install SpeechRecognition
 ```

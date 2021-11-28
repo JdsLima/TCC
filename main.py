@@ -42,20 +42,17 @@ class formateText():
         commandKeys = self.command_flags.keys()
 
         for i, str in enumerate(self.text):
-            if "Yumi" in str and i + 1 < (len(self.text) - 1):
+            if "ativar" in str and i + 1 < (len(self.text) - 1):
                 command = self.text[i + 1]
-                if command in commandKeys:
+                if command in commandKeys and not self.command_flags[command]:
                     del(self.text[i])
-                    self.text[i] = self.command_action.get(self.text[i])[0]
+                    self.text[i] = self.command_action.get(self.text[i].lower())[0]
                     self.command_flags[command] = True
 
-                elif command == "fim":
-                    command = self.text[i + 2]
-                    if command in commandKeys and self.command_flags[command]:
-                        del(self.text[i + 1])
-                        del(self.text[i])
-                        self.text[i] = self.command_action.get(self.text[i])[1]
-                        self.command_flags[command] = False
+                else:
+                    del(self.text[i])
+                    self.text[i] = self.command_action.get(self.text[i].lower())[1]
+                    self.command_flags[command] = False
 
         return(" ".join(self.text))
 
@@ -188,7 +185,7 @@ class TextBoxContainer(Screen):
 
     def message(self, msg, *args):
         phease = formateText(msg.split()).formate()
-        
+        print(phease)
         self.ids.mic.text = "Iniciar"
         self.ids.textBox.add_widget(LabelBox(text=phease))
         self.pheases.append(phease)
