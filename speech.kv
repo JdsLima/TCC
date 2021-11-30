@@ -26,18 +26,25 @@
             size_hint_y: 3
             allow_stretch: True
         RoundButton:
+            font_size: 18
             text: "Transcrição de texto"
             size_hint_y: None
             height: "60sp"
-            on_release: app.root.current = "textBoxContainer"
+            on_release: 
+                app.root.current = "textBoxContainer"
+                root.manager.transition.direction = "left"
 
         RoundButton:
+            font_size: 18
             text: "Instruções de uso"
             size_hint_y: None
             height: "60sp"
-            on_release: app.root.current = "instructions"
+            on_release: 
+                app.root.current = "instructions"
+                root.manager.transition.direction = "left"
 
         RoundButton:
+            font_size: 18
             text: "Sair"
             size_hint_y: None
             height: "60sp"
@@ -60,7 +67,9 @@
                     app_icon_width: 90
                     markup: True
                     title: "[b]Transcrição de texto[/b]"
-                    on_release: app.root.current = "menu"
+                    on_release: 
+                        app.root.current = "menu"
+                        root.manager.transition.direction = "right"
                 ActionButton:
                     markup: True
                     text: "[b]Teste[/b]"
@@ -76,12 +85,6 @@
                 size_hint_y: None
                 height: self.minimum_height
         BoxLayout:
-            # canvas:
-            #     Color:
-            #         rgba: 0, .6, .2, 1
-            #     Rectangle:
-            #         pos: self.pos
-            #         size: self.size
             padding: self.width/2 - 50, 10, 30, 10
             size_hint_y: None
             height: "60sp"
@@ -91,13 +94,6 @@
                 size_hint_x: None
                 width: 100
                 on_release: root.initRecorder()
-            # Button:
-            #     id: mic
-            #     background_normal: "icons/microfone.png"
-            #     border: 0, 0, 0, 0
-            #     size_hint_x: None
-            #     width: "60sp"
-            #     on_release: root.listen()
 
 <Instructions>:
     BoxLayout:
@@ -109,13 +105,16 @@
                 size: self.size
                 pos: self.pos
         ActionBar:
+            background_color: 0.1, 0.1, 1, 0.65
             ActionView:
                 ActionPrevious:
                     app_icon: "icons/logo.png"
                     app_icon_width: 90
                     markup: True
                     title: "[b]Instruções de uso[/b]"
-                    on_release: app.root.current = "menu"
+                    on_release: 
+                        app.root.current = "menu"
+                        root.manager.transition.direction = "right"
                 ActionSeparator:
                 ActionButton:
                     markup: True
@@ -149,17 +148,3 @@
         size_hint_y: None
         height: 44
         on_release: root.select('item2')
-
-# <RoundButton@ButtonBehavior+Label>:
-#     canvas.before:
-#         Color:
-#             rgba: 0.1, 0.5, 0.8,1
-#         Ellipse:
-#             pos: self.pos
-#             size: self.height, self.height
-#         Ellipse:
-#             pos: self.x + self.width - self.height, self.y
-#             size: self.height, self.height
-#         Rectangle:
-#             pos: self.x + self.height /2.0, self.y
-#             size: self.width - self.height, self.height

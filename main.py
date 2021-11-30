@@ -1,6 +1,6 @@
 import json
 from kivy.app import App
-from kivy.metrics import sp
+from kivy.metrics import inch, sp
 from kivy.clock import Clock
 from kivy.config import Config
 import speech_recognition as sr
@@ -11,7 +11,7 @@ from kivy.core.window import Window
 from kivy.animation import Animation
 from kivy.uix.boxlayout import BoxLayout
 from kivy.properties import ListProperty
-from kivy.graphics import Rectangle, Color, Ellipse
+from kivy.graphics import RoundedRectangle, Color
 from kivy.uix.behaviors.button import ButtonBehavior
 from kivy.uix.screenmanager import ScreenManager, Screen
 
@@ -35,7 +35,9 @@ class formateText():
     command_action = dict(
         negrito = ["[b]", "[/b]"],
         itálico = ["[i]", "[/i]"],
-        sublinhado = ["[u]", "[/u]"]
+        sublinhado = ["[u]", "[/u]"],
+        vírgula = ",",
+        interrogação = "?"
     )
 
     def formate(self):
@@ -43,16 +45,24 @@ class formateText():
 
         for i, str in enumerate(self.text):
             if "ativar" in str and i + 1 < (len(self.text) - 1):
-                command = self.text[i + 1]
+                command = self.text[i + 1].lower()
                 if command in commandKeys and not self.command_flags[command]:
                     del(self.text[i])
-                    self.text[i] = self.command_action.get(self.text[i].lower())[0]
+                    self.text[i] = self.command_action.get(command)[0]
                     self.command_flags[command] = True
 
-                else:
+                elif command in commandKeys:
                     del(self.text[i])
-                    self.text[i] = self.command_action.get(self.text[i].lower())[1]
+                    self.text[i] = self.command_action.get(command)[1]
                     self.command_flags[command] = False
+
+            elif "vírgula" in str:
+                del(self.text[i])
+                self.text[i - 1] += self.command_action[str]
+
+            elif "interrogação" in str:
+                del(self.text[i])
+                self.text[i - 1] += self.command_action[str]
 
         return(" ".join(self.text))
 
@@ -113,18 +123,7 @@ class RoundButton(ButtonBehavior, Label):
         self.canvas.before.clear()
         with self.canvas.before:
             Color(rgba=self.cor)
-            Ellipse(
-                size=(self.height, self.height), 
-                pos=self.pos
-            )
-            Ellipse(
-                size=(self.height, self.height),
-                pos=(self.x + self.width - self.height, self.y)
-            )
-            Rectangle(
-                size=(self.width-self.height,self.height),
-                pos=(self.x + self.height/2.0, self.y)
-            )
+            RoundedRectangle(pos=self.pos, size=self.size, radius=[20])
 
 class TextBoxContainer(Screen):
     pheases = []
@@ -185,7 +184,10 @@ class TextBoxContainer(Screen):
 
     def message(self, msg, *args):
         phease = formateText(msg.split()).formate()
-        print(phease)
+
+        print("frase antes das mudanças:\n", msg)
+        print("frase pré-processada:\n", phease)
+
         self.ids.mic.text = "Iniciar"
         self.ids.textBox.add_widget(LabelBox(text=phease))
         self.pheases.append(phease)
@@ -196,7 +198,7 @@ class TextBoxContainer(Screen):
             audio = r.listen(source)
         
         try:
-            # Gravando com API do google
+            # Reconhecendo com API do google
             value = r.recognize_google(audio, language='pt-BR')
             self.message(value)
         
@@ -209,8 +211,8 @@ class TextBoxContainer(Screen):
     
     def initRecorder(self, *args):
         self.ids.mic.text = "Escutando..."
-        # Atrasa a execução da método listen() em 0.5 segundos
-        Clock.schedule_once(self.listen, 0.5)
+        # Atrasa a execução da método listen() em 0.3 segundos
+        Clock.schedule_once(self.listen, 0.3)
 
     def removeWidget(self, phrase):
         text = phrase.ids.label.text
