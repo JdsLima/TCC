@@ -1,6 +1,6 @@
 import json
 from kivy.app import App
-from kivy.metrics import inch, sp
+from kivy.metrics import sp
 from kivy.clock import Clock
 from kivy.config import Config
 import speech_recognition as sr
@@ -92,7 +92,7 @@ class Menu(Screen):
         buttons.add_widget(closeButton)
         box.add_widget(Image(source="icons/warning.png"))
         box.add_widget(buttons)
-
+          
         animation = Animation(size=(sp(300), sp(200)), duration=0.3, t="out_back")
         animation.start(popup)
         popup.open()
@@ -157,6 +157,7 @@ class TextBoxContainer(Screen):
         except FileNotFoundError:
             print("Arquivo não encontrado no caminho: {}".format(self.path))
 
+
     def saveData(self):
         with open(self.path + "data.json", "w") as data:
             json.dump(self.pheases, data)
@@ -198,12 +199,12 @@ class TextBoxContainer(Screen):
     def listen(self, *args):
         with m as source:
             audio = r.listen(source)
-       
+        
         try:
             # Reconhecendo com API do google
             value = r.recognize_google(audio, language='pt-BR')
             self.message(value)
-                
+        
         except sr.UnknownValueError:
             self.messageError("Não entendi o que você falou.")
         
