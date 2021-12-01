@@ -2,7 +2,6 @@
 class formateText():
     def __init__(self, text) -> None:
         self.text = text
-        self.formate(self.text)
 
     command_flags = dict(
         negrito = False, 
@@ -13,28 +12,40 @@ class formateText():
     command_action = dict(
         negrito = ["[b]", "[/b]"],
         itálico = ["[i]", "[/i]"],
-        sublinhado = ["[u]", "[/u]"]
+        sublinhado = ["[u]", "[/u]"],
+        vírgula = ",",
+        interrogação = "?"
     )
 
-    def formate(self, text):
+    def formate(self):
         commandKeys = self.command_flags.keys()
+        limit = len(self.text) - 1
 
-        for i, str in enumerate(text):
-            if "Yumi" in str and i + 1 < (len(text) - 1):
-                command = text[i + 1]
-                if (command in commandKeys):
-                    del(text[i])
-                    text[i] = self.command_action.get(text[i])[0]
+        for i, str in enumerate(self.text):
+            if "ativar" == str.lower() and i + 1 < limit:
+                command = self.text[i + 1].lower()
+                if command in commandKeys and not self.command_flags[command]:
+                    del(self.text[i])
+                    self.text[i] = self.command_action.get(command)[0]
                     self.command_flags[command] = True
 
-                elif (command == "fim"):
-                    command = text[i + 2]
-                    if command in commandKeys and self.command_flags[command]:
-                        del(text[i + 1])
-                        del(text[i])
-                        text[i] = self.command_action.get(text[i])[1]
+            elif "desativar" == str.lower() and i + 1 < limit:
+                command = self.text[i + 1].lower()
+                if command in commandKeys and self.command_flags[command]:
+                    del(self.text[i])
+                    self.text[i] = self.command_action.get(command)[1]
+                    self.command_flags[command] = False
 
-        print(" ".join(text))
+            elif "vírgula" in str:
+                del(self.text[i])
+                self.text[i - 1] += self.command_action[str]
+
+            elif "interrogação" in str:
+                del(self.text[i])
+                self.text[i - 1] += self.command_action[str]
+
+        return(" ".join(self.text))
     
-text = ["Yumi", "negrito", "testando", "texto", "em", "negrito", "Yumi", "fim", "negrito"]
-a = formateText(text)
+text = ["ativar", "negrito", "testando", "texto", "em", "negrito", "desativar", "negrito"]
+a = formateText(text).formate()
+print(a)

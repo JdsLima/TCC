@@ -42,16 +42,19 @@ class formateText():
 
     def formate(self):
         commandKeys = self.command_flags.keys()
+        limit = len(self.text) - 1
 
         for i, str in enumerate(self.text):
-            if "ativar" in str and i + 1 < (len(self.text) - 1):
+            if "ativar" == str.lower() and i + 1 < limit:
                 command = self.text[i + 1].lower()
                 if command in commandKeys and not self.command_flags[command]:
                     del(self.text[i])
                     self.text[i] = self.command_action.get(command)[0]
                     self.command_flags[command] = True
 
-                elif command in commandKeys:
+            elif "desativar" == str.lower() and i + 1 < limit:
+                command = self.text[i + 1].lower()
+                if command in commandKeys and self.command_flags[command]:
                     del(self.text[i])
                     self.text[i] = self.command_action.get(command)[1]
                     self.command_flags[command] = False
@@ -87,13 +90,13 @@ class Menu(Screen):
 
         buttons.add_widget(exitButton)
         buttons.add_widget(closeButton)
-
         box.add_widget(Image(source="icons/warning.png"))
         box.add_widget(buttons)
-        
+
         animation = Animation(size=(sp(300), sp(200)), duration=0.3, t="out_back")
         animation.start(popup)
         popup.open()
+
         return True
 
 class RoundButton(ButtonBehavior, Label):
@@ -154,7 +157,6 @@ class TextBoxContainer(Screen):
         except FileNotFoundError:
             print("Arquivo não encontrado no caminho: {}".format(self.path))
 
-
     def saveData(self):
         with open(self.path + "data.json", "w") as data:
             json.dump(self.pheases, data)
@@ -196,12 +198,12 @@ class TextBoxContainer(Screen):
     def listen(self, *args):
         with m as source:
             audio = r.listen(source)
-        
+       
         try:
             # Reconhecendo com API do google
             value = r.recognize_google(audio, language='pt-BR')
             self.message(value)
-        
+                
         except sr.UnknownValueError:
             self.messageError("Não entendi o que você falou.")
         
