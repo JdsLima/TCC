@@ -42,21 +42,21 @@ class formateText():
 
     def formate(self):
         commandKeys = self.command_flags.keys()
-        limit = len(self.text) - 1
+        limit = len(self.text)
 
         for i, str in enumerate(self.text):
             if "ativar" == str.lower() and i + 1 < limit:
                 command = self.text[i + 1].lower()
                 if command in commandKeys and not self.command_flags[command]:
                     del(self.text[i])
-                    self.text[i] = self.command_action.get(command)[0]
+                    self.text[i] = self.command_action[command][0]
                     self.command_flags[command] = True
 
             elif "desativar" == str.lower() and i + 1 < limit:
                 command = self.text[i + 1].lower()
                 if command in commandKeys and self.command_flags[command]:
                     del(self.text[i])
-                    self.text[i] = self.command_action.get(command)[1]
+                    self.text[i] = self.command_action[command][1]
                     self.command_flags[command] = False
 
             elif "vírgula" in str:
@@ -163,7 +163,7 @@ class TextBoxContainer(Screen):
             json.dump(self.pheases, data)
 
     def messageError(self, msg, *args):
-        self.ids.mic.text = "Iniciar"
+        self.ids.image_mic.source = "icons/mic.png"
         box = BoxLayout(orientation="vertical", padding=10, spacing=10)
         popup = Popup(
             title="Ops, ocorreu um erro!", 
@@ -191,7 +191,7 @@ class TextBoxContainer(Screen):
         print("frase antes das mudanças:\n", msg)
         print("frase pré-processada:\n", phease)
 
-        self.ids.mic.text = "Iniciar"
+        self.ids.image_mic.source = "icons/mic.png"
         self.ids.textBox.add_widget(LabelBox(text=phease))
         self.pheases.append(phease)
         # self.saveData()
@@ -213,7 +213,7 @@ class TextBoxContainer(Screen):
             print("ERROR ====> {0}".format(e))
     
     def initRecorder(self, *args):
-        self.ids.mic.text = "Escutando..."
+        self.ids.image_mic.source = "icons/mic_active.png"
         # Atrasa a execução da método listen() em 0.3 segundos
         Clock.schedule_once(self.listen, 0.3)
 
@@ -224,8 +224,38 @@ class TextBoxContainer(Screen):
         self.saveData()
 
 class Instructions(Screen):
-    pass
+    def on_pre_enter(self, *args):
+        super().on_pre_enter(*args)
+        self.ids.textBoxIntructions.clear_widgets()
 
+        title = "INSTRUÇÕES DE USO"
+
+        negrito = ("[b]Negrito:[/b]\n\nPara ativar o negrito basta dizer"
+        " [b]\"ativar negrito\"[/b] que tudo o que for dito em seguida"
+        " ficará em negrito.\nPara desativá-lo basta dizer " 
+        "[b]\"desativar negrito\"[/b] e continuar falando normalmente.")
+
+        italico = ("[b]Itálico:[/b]\n\nPara ativar o itálico basta dizer"
+        " [b]\"ativar itálico\"[/b] que tudo o que for dito em seguida"
+        " ficará em itálico.\nPara desativá-lo basta dizer " 
+        "[b]\"desativar itálico\"[/b] e continuar falando normalmente.")
+
+        sublinhado = ("[b]Sublinhado:[/b]\n\nPara ativar o sublinhado basta dizer"
+        " [b]\"ativar sublinhado\"[/b] que tudo o que for dito em seguida"
+        " ficará em sublinhado.\nPara desativá-lo basta dizer " 
+        "[b]\"desativar sublinhado\"[/b] e continuar falando normalmente.")
+
+        self.ids.textBoxIntructions.add_widget(LabelBox(
+            text="[u]" + title + "[/u]",
+            markup = True,
+            font_name='Roboto-Bold',
+            font_size = 20,
+            color = [0.4, 0.4, 0.4, 1],
+            halign= 'center'
+        ))
+        self.ids.textBoxIntructions.add_widget(LabelBox(text=negrito, markup=True))
+        self.ids.textBoxIntructions.add_widget(LabelBox(text=italico, markup=True))
+        self.ids.textBoxIntructions.add_widget(LabelBox(text=sublinhado, markup=True))
 
 class LabelBox(Label):
     def __init__(self, **kwargs):

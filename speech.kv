@@ -60,6 +60,7 @@
                 size: self.size
                 pos: self.pos
         ActionBar:
+            background_normal: ''
             background_color: 0.1, 0.1, 1, 0.65
             ActionView:
                 ActionPrevious:
@@ -89,11 +90,15 @@
             size_hint_y: None
             height: "60sp"
             RoundButton:
-                id: mic
-                text: "Iniciar"
                 size_hint_x: None
                 width: 100
                 on_release: root.initRecorder()
+
+                Image:
+                    id: image_mic
+                    source: "icons/mic.png"
+                    center_x: self.parent.center_x
+                    center_y: self.parent.center_y
 
 <Instructions>:
     BoxLayout:
