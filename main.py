@@ -43,31 +43,41 @@ class formateText():
     def formate(self):
         commandKeys = self.command_flags.keys()
         limit = len(self.text)
+        newParagraph = False
 
         for i, str in enumerate(self.text):
-            if "ativar" == str.lower() and i + 1 < limit:
+            if "vírgula" in str.lower():
+                del(self.text[i])
+                self.text[i - 1] += self.command_action[str]
+
+            elif "interrogação" in str.lower():
+                del(self.text[i])
+                self.text[i - 1] += self.command_action[str]
+            
+            elif "novo" in str.lower() and i + 1 < limit:
+                command = self.text[i + 1].lower()
+                if command == "parágrafo":
+                    del(self.text[i + 1])
+                    del(self.text[i])
+                    newParagraph = True
+
+            elif "ativar" == str.lower() and i + 1 < limit:
                 command = self.text[i + 1].lower()
                 if command in commandKeys and not self.command_flags[command]:
+                    del(self.text[i + 1])
                     del(self.text[i])
-                    self.text[i] = self.command_action[command][0]
+                    self.text[i] = self.command_action[command][0] + self.text[i]
                     self.command_flags[command] = True
 
             elif "desativar" == str.lower() and i + 1 < limit:
                 command = self.text[i + 1].lower()
                 if command in commandKeys and self.command_flags[command]:
+                    del(self.text[i + 1])
                     del(self.text[i])
-                    self.text[i] = self.command_action[command][1]
+                    self.text[i - 1] += self.command_action[command][1]
                     self.command_flags[command] = False
 
-            elif "vírgula" in str:
-                del(self.text[i])
-                self.text[i - 1] += self.command_action[str]
-
-            elif "interrogação" in str:
-                del(self.text[i])
-                self.text[i - 1] += self.command_action[str]
-
-        return(" ".join(self.text))
+        return([" ".join(self.text), newParagraph])
 
 class Manager(ScreenManager):
     pass
@@ -129,7 +139,7 @@ class RoundButton(ButtonBehavior, Label):
             RoundedRectangle(pos=self.pos, size=self.size, radius=[20])
 
 class TextBoxContainer(Screen):
-    pheases = []
+    pheases = [[]]
     path = ''
 
     def on_pre_enter(self, *args):
@@ -139,7 +149,7 @@ class TextBoxContainer(Screen):
         self.readData()
         Window.bind(on_keyboard=self.comeBack)
         for phease in self.pheases:
-            self.ids.textBox.add_widget(LabelBox(text=phease))
+            self.ids.textBox.add_widget(LabelBox(text=" ".join(phease)))
 
     def comeBack(self, window, key, *args):
         if key == 27:
@@ -186,15 +196,26 @@ class TextBoxContainer(Screen):
         return True
 
     def message(self, msg, *args):
-        phease = formateText(msg.split()).formate()
-
-        print("frase antes das mudanças:\n", msg)
-        print("frase pré-processada:\n", phease)
-
+        phease, newParagraph = formateText(msg.split()).formate()
         self.ids.image_mic.source = "icons/mic.png"
-        self.ids.textBox.add_widget(LabelBox(text=phease))
-        self.pheases.append(phease)
+        textBoxTree = self.ids.textBox.children
+        pheasesLen = len(self.pheases)
+
+        if newParagraph:
+            self.ids.textBox.add_widget(LabelBox(text=phease))
+            self.pheases.append([phease])
+        elif len(textBoxTree) > 0:
+            self.ids.textBox.children[0].text += " " + phease
+            self.pheases[pheasesLen - 1].append(phease)
+        else:
+            self.ids.textBox.add_widget(LabelBox(text=phease))
+            self.pheases[pheasesLen - 1].append(phease)
+
         # self.saveData()
+
+        # print("Lista de frases:\n",self.pheases)
+        # print("frase antes das mudanças:\n", msg)
+        # print("frase pré-processada:\n", phease)
 
     def listen(self, *args):
         with m as source:
@@ -230,32 +251,31 @@ class Instructions(Screen):
 
         title = "INSTRUÇÕES DE USO"
 
-        negrito = ("[b]Negrito:[/b]\n\nPara ativar o negrito basta dizer"
+        bold = ("[b]Negrito:[/b]\n\nPara ativar o negrito basta dizer"
         " [b]\"ativar negrito\"[/b] que tudo o que for dito em seguida"
-        " ficará em negrito.\nPara desativá-lo basta dizer " 
+        " ficará em negrito. Para desativá-lo basta dizer " 
         "[b]\"desativar negrito\"[/b] e continuar falando normalmente.")
 
-        italico = ("[b]Itálico:[/b]\n\nPara ativar o itálico basta dizer"
+        italic = ("[b]Itálico:[/b]\n\nPara ativar o itálico basta dizer"
         " [b]\"ativar itálico\"[/b] que tudo o que for dito em seguida"
-        " ficará em itálico.\nPara desativá-lo basta dizer " 
+        " ficará em itálico. Para desativá-lo basta dizer " 
         "[b]\"desativar itálico\"[/b] e continuar falando normalmente.")
 
-        sublinhado = ("[b]Sublinhado:[/b]\n\nPara ativar o sublinhado basta dizer"
+        underline = ("[b]Sublinhado:[/b]\n\nPara ativar o sublinhado basta dizer"
         " [b]\"ativar sublinhado\"[/b] que tudo o que for dito em seguida"
-        " ficará em sublinhado.\nPara desativá-lo basta dizer " 
+        " ficará em sublinhado. Para desativá-lo basta dizer " 
         "[b]\"desativar sublinhado\"[/b] e continuar falando normalmente.")
 
         self.ids.textBoxIntructions.add_widget(LabelBox(
             text="[u]" + title + "[/u]",
-            markup = True,
             font_name='Roboto-Bold',
             font_size = 20,
             color = [0.4, 0.4, 0.4, 1],
             halign= 'center'
         ))
-        self.ids.textBoxIntructions.add_widget(LabelBox(text=negrito, markup=True))
-        self.ids.textBoxIntructions.add_widget(LabelBox(text=italico, markup=True))
-        self.ids.textBoxIntructions.add_widget(LabelBox(text=sublinhado, markup=True))
+        self.ids.textBoxIntructions.add_widget(LabelBox(text=bold, halign='justify'))
+        self.ids.textBoxIntructions.add_widget(LabelBox(text=italic, halign='justify'))
+        self.ids.textBoxIntructions.add_widget(LabelBox(text=underline, halign='justify'))
 
 class LabelBox(Label):
     def __init__(self, **kwargs):
