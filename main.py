@@ -15,9 +15,8 @@ from kivy.graphics import RoundedRectangle, Color
 from kivy.uix.behaviors.button import ButtonBehavior
 from kivy.uix.screenmanager import ScreenManager, Screen
 
-# Config.set('graphics', 'width', '600')
-# Config.set('graphics', 'height', '400')
 Config.set('kivy','window_icon','icons/logo.png')
+Config.write()
 
 r = sr.Recognizer()
 m = sr.Microphone()
@@ -238,18 +237,20 @@ class TextBoxContainer(Screen):
         # Atrasa a execução da método listen() em 0.3 segundos
         Clock.schedule_once(self.listen, 0.3)
 
-    def removeWidget(self, phrase):
-        text = phrase.ids.label.text
-        self.ids.textBox.remove_widget(phrase)
-        self.phease.remove(text)
-        self.saveData()
-
 class Instructions(Screen):
     def on_pre_enter(self, *args):
         super().on_pre_enter(*args)
         self.ids.textBoxIntructions.clear_widgets()
 
-        title = "INSTRUÇÕES DE USO"
+        title = "Introdução"
+        subTitle = "Comandos"
+
+        introduction = ("Para que o reconhecimento de fala funcione"
+        " corretamente, é muito importante que você esteja em um lugar"
+        " com pouco barulho. Além disso, verifique nas configurações" 
+        " de seu microfone se o volume está muito alto (volume muito"
+        " alto pode ser prejudicial, pois faz o microfone capturar muitos"
+        " ruídos e portanto, dificulta o sistema de reconhecimento).")
 
         bold = ("[b]Negrito:[/b]\n\nPara ativar o negrito basta dizer"
         " [b]\"ativar negrito\"[/b] que tudo o que for dito em seguida"
@@ -266,8 +267,19 @@ class Instructions(Screen):
         " ficará em sublinhado. Para desativá-lo basta dizer " 
         "[b]\"desativar sublinhado\"[/b] e continuar falando normalmente.")
 
+        paragraph = ("[b]Novo parágrafo:[/b]\n\nPara adicionar um novo parágrafo"
+        " basta dizer [b]\"novo parágrafo\"[/b] e continuar falando o texto.")
+
         self.ids.textBoxIntructions.add_widget(LabelBox(
             text="[u]" + title + "[/u]",
+            font_name='Roboto-Bold',
+            font_size = 20,
+            color = [0.4, 0.4, 0.4, 1],
+            halign= 'center'
+        ))
+        self.ids.textBoxIntructions.add_widget(LabelBox(text=introduction, halign='justify'))
+        self.ids.textBoxIntructions.add_widget(LabelBox(
+            text="[u]" + subTitle + "[/u]",
             font_name='Roboto-Bold',
             font_size = 20,
             color = [0.4, 0.4, 0.4, 1],
@@ -276,6 +288,7 @@ class Instructions(Screen):
         self.ids.textBoxIntructions.add_widget(LabelBox(text=bold, halign='justify'))
         self.ids.textBoxIntructions.add_widget(LabelBox(text=italic, halign='justify'))
         self.ids.textBoxIntructions.add_widget(LabelBox(text=underline, halign='justify'))
+        self.ids.textBoxIntructions.add_widget(LabelBox(text=paragraph, halign='justify'))
 
 class LabelBox(Label):
     def __init__(self, **kwargs):
