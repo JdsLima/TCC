@@ -1,5 +1,6 @@
 import json
 from kivy.app import App
+from typing import Tuple
 from kivy.metrics import sp
 from kivy.clock import Clock
 from kivy.config import Config
@@ -39,7 +40,7 @@ class formateText():
         interrogação = "?"
     )
 
-    def formate(self):
+    def formate(self) -> Tuple[str, bool]:
         commandKeys = self.command_flags.keys()
         limit = len(self.text)
         newParagraph = False
@@ -82,10 +83,10 @@ class Manager(ScreenManager):
     pass
 
 class Menu(Screen):
-    def on_pre_enter(self):
+    def on_pre_enter(self) -> None:
         Window.bind(on_request_close=self.confirm_exit)
 
-    def confirm_exit(self, *args, **kwargs):
+    def confirm_exit(self, *args, **kwargs) -> bool:
         box = BoxLayout(orientation="vertical", padding=10, spacing=10)
         popup = Popup(
             title="Deseja realmente sair?", 
@@ -112,26 +113,26 @@ class RoundButton(ButtonBehavior, Label):
     cor = ListProperty([0.1, 0.5, 0.8,1])
     cor2 = ListProperty([0.3,0.1,0.9,1])
 
-    def __init__(self,**kwargs):
+    def __init__(self,**kwargs) -> None:
         super(RoundButton,self).__init__(**kwargs)
         self.update()
 
-    def on_pos(self, *args):
+    def on_pos(self, *args) -> None:
         self.update()
 
-    def on_size(self, *args):
+    def on_size(self, *args) -> None:
         self.update()
 
-    def on_press(self, *args):
+    def on_press(self, *args) -> None:
         self.cor, self.cor2 = self.cor2, self.cor
 
-    def on_release(self, *args):
+    def on_release(self, *args) -> None:
         self.cor, self.cor2 = self.cor2, self.cor
 
-    def on_cor(self, *args):
+    def on_cor(self, *args) -> None:
         self.update()
 
-    def update(self, *args):
+    def update(self, *args) -> None:
         self.canvas.before.clear()
         with self.canvas.before:
             Color(rgba=self.cor)
@@ -141,7 +142,7 @@ class TextBoxContainer(Screen):
     pheases = [[]]
     path = ''
 
-    def on_pre_enter(self, *args):
+    def on_pre_enter(self, *args)  -> None:
         super().on_pre_enter(*args)
         self.ids.textBox.clear_widgets()
         self.path = App.get_running_app().user_data_dir + "/"
@@ -150,16 +151,16 @@ class TextBoxContainer(Screen):
         for phease in self.pheases:
             self.ids.textBox.add_widget(LabelBox(text=" ".join(phease)))
 
-    def comeBack(self, window, key, *args):
+    def comeBack(self, window, key, *args) -> None:
         if key == 27:
             App.get_running_app().root.current = "menu"
             return True
 
-    def on_pre_leave(self, *args):
+    def on_pre_leave(self, *args) -> None:
         super().on_pre_leave(*args)
         Window.unbind(on_keyboard=self.comeBack)
 
-    def readData(self, *args):
+    def readData(self, *args) -> None:
         try:
             with open(self.path + "data.json", "r") as data:
                 self.pheases = json.load(data)
@@ -167,11 +168,11 @@ class TextBoxContainer(Screen):
             print("Arquivo não encontrado no caminho: {}".format(self.path))
 
 
-    def saveData(self):
+    def saveData(self) -> None:
         with open(self.path + "data.json", "w") as data:
             json.dump(self.pheases, data)
 
-    def messageError(self, msg, *args):
+    def messageError(self, msg, *args) -> bool:
         self.ids.image_mic.source = "icons/mic.png"
         box = BoxLayout(orientation="vertical", padding=10, spacing=10)
         popup = Popup(
@@ -181,11 +182,7 @@ class TextBoxContainer(Screen):
             size=(sp(150), sp(150))
         )
 
-        labelMsg = Label(
-            text="[b]" + msg + "[/b]", 
-            font_size='16sp', 
-            markup = True
-        )
+        labelMsg = Label(text=msg, bold=True, font_size='16sp')
         box.add_widget(Image(source="icons/logo.png"))
         box.add_widget(labelMsg)
         animation = Animation(size=(sp(330), sp(200)), duration=0.3, t="out_back")
@@ -194,7 +191,7 @@ class TextBoxContainer(Screen):
         popup.open()
         return True
 
-    def message(self, msg, *args):
+    def message(self, msg, *args) -> None:
         phease, newParagraph = formateText(msg.split()).formate()
         self.ids.image_mic.source = "icons/mic.png"
         textBoxTree = self.ids.textBox.children
@@ -216,7 +213,7 @@ class TextBoxContainer(Screen):
         # print("frase antes das mudanças:\n", msg)
         # print("frase pré-processada:\n", phease)
 
-    def listen(self, *args):
+    def listen(self, *args) -> None:
         with m as source:
             audio = r.listen(source)
         
@@ -232,13 +229,13 @@ class TextBoxContainer(Screen):
             self.messageError("Não consigo conectar ao servidor :(")
             print("ERROR ====> {0}".format(e))
     
-    def initRecorder(self, *args):
+    def initRecorder(self, *args) -> None:
         self.ids.image_mic.source = "icons/mic_active.png"
         # Atrasa a execução da método listen() em 0.3 segundos
         Clock.schedule_once(self.listen, 0.3)
 
 class Instructions(Screen):
-    def on_pre_enter(self, *args):
+    def on_pre_enter(self, *args) -> None:
         super().on_pre_enter(*args)
         self.ids.textBoxIntructions.clear_widgets()
 
@@ -268,7 +265,7 @@ class Instructions(Screen):
         "[b]\"desativar sublinhado\"[/b] e continuar falando normalmente.")
 
         paragraph = ("[b]Novo parágrafo:[/b]\n\nPara adicionar um novo parágrafo"
-        " basta dizer [b]\"novo parágrafo\"[/b] e continuar falando o texto.")
+        " basta dizer [b]\"novo parágrafo\"[/b] e continuar falando o seu texto.")
 
         self.ids.textBoxIntructions.add_widget(LabelBox(
             text="[u]" + title + "[/u]",
@@ -291,20 +288,20 @@ class Instructions(Screen):
         self.ids.textBoxIntructions.add_widget(LabelBox(text=paragraph, halign='justify'))
 
 class LabelBox(Label):
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
 
-    def on_size(self, *args):
+    def on_size(self, *args) -> None:
         if self.width > 1024:
             self.text_size = (self.width / 2, None)
         else:
             self.text_size = (self.width - sp(50), None)
 
-    def on_texture_size(self, *args):
+    def on_texture_size(self, *args) -> None:
         self.size = self.texture_size
         self.height += sp(20)
 
-class speech(App):
+class Yumi(App):
     def build(self):
         with m as source:
             # Ajusta o ruído
@@ -313,4 +310,4 @@ class speech(App):
         return Manager()
 
 if __name__ == '__main__':
-    speech().run()
+    Yumi().run()
