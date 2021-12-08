@@ -42,7 +42,7 @@ class formateText():
 
     def formate(self) -> Tuple[str, bool]:
         commandKeys = self.command_flags.keys()
-        limit = len(self.text)
+        limit = len(self.text) - 1
         newParagraph = False
 
         for i, str in enumerate(self.text):
@@ -268,7 +268,8 @@ class Instructions(Screen):
         " basta dizer [b]\"novo parágrafo\"[/b] e continuar falando o seu texto.")
 
         self.ids.textBoxIntructions.add_widget(LabelBox(
-            text="[u]" + title + "[/u]",
+            text=title,
+            underline = True,
             font_name='Roboto-Bold',
             font_size = 20,
             color = [0.4, 0.4, 0.4, 1],
@@ -276,7 +277,8 @@ class Instructions(Screen):
         ))
         self.ids.textBoxIntructions.add_widget(LabelBox(text=introduction, halign='justify'))
         self.ids.textBoxIntructions.add_widget(LabelBox(
-            text="[u]" + subTitle + "[/u]",
+            text=subTitle,
+            underline = True,
             font_name='Roboto-Bold',
             font_size = 20,
             color = [0.4, 0.4, 0.4, 1],
