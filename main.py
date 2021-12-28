@@ -1,6 +1,7 @@
 import json
 from kivy.app import App
-from typing import Tuple
+from typing import Union
+from docx import Document
 from kivy.metrics import sp
 from kivy.clock import Clock
 from kivy.config import Config
@@ -21,8 +22,22 @@ Config.write()
 
 r = sr.Recognizer()
 m = sr.Microphone()
+doc = Document()
 
-class formateText():
+class DocumentBuilder():
+    def title(self, newTitle) -> None:
+        self.Title = newTitle
+        doc.add_heading(self.Title, 0)
+
+    def newParagraph(self, textList) -> None:
+        text = " ".join(textList)
+        doc.add_paragraph(text)
+
+    def builder(self) -> None:
+        doc.add_page_break()
+        doc.save(self.Title + '.docx')
+
+class FormateText():
     def __init__(self, text) -> None:
         self.text = text
 
@@ -40,7 +55,7 @@ class formateText():
         interrogação = "?"
     )
 
-    def formate(self) -> Tuple[str, bool]:
+    def formate(self) -> Union[str, bool]:
         commandKeys = self.command_flags.keys()
         limit = len(self.text) - 1
         newParagraph = False
@@ -171,6 +186,13 @@ class TextBoxContainer(Screen):
     def saveData(self) -> None:
         with open(self.path + "data.json", "w") as data:
             json.dump(self.pheases, data)
+    
+    def docxBuilder(self, *args) -> None:
+        document = DocumentBuilder()
+        document.title("Teste")
+        for textList in self.pheases:      
+            document.newParagraph(textList)
+        document.builder()
 
     def messageError(self, msg, *args) -> bool:
         self.ids.image_mic.source = "icons/mic.png"
@@ -192,7 +214,7 @@ class TextBoxContainer(Screen):
         return True
 
     def message(self, msg, *args) -> None:
-        phease, newParagraph = formateText(msg.split()).formate()
+        phease, newParagraph = FormateText(msg.split()).formate()
         self.ids.image_mic.source = "icons/mic.png"
         textBoxTree = self.ids.textBox.children
         pheasesLen = len(self.pheases)

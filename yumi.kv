@@ -73,7 +73,8 @@
                         root.manager.transition.direction = "right"
                 ActionButton:
                     markup: True
-                    text: "[b]Teste[/b]"
+                    text: "[b]Exportar para docx[/b]"
+                    on_release: root.docxBuilder()
                 ActionSeparator:
                 ActionButton:
                     markup: True
@@ -93,7 +94,6 @@
                 size_hint_x: None
                 width: 100
                 on_release: root.initRecorder()
-
                 Image:
                     id: image_mic
                     source: "icons/mic.png"
