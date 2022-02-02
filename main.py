@@ -1,9 +1,9 @@
 import json
 from kivy.app import App
-from typing import Union
 from docx import Document
 from kivy.metrics import sp
 from kivy.clock import Clock
+from typing import List, Union
 from kivy.config import Config
 import speech_recognition as sr
 from kivy.uix.popup import Popup
@@ -11,6 +11,7 @@ from kivy.uix.label import Label
 from kivy.uix.image import Image
 from kivy.core.window import Window
 from kivy.animation import Animation
+from kivy.uix.textinput import TextInput
 from kivy.uix.boxlayout import BoxLayout
 from kivy.properties import ListProperty
 from kivy.graphics import RoundedRectangle, Color
@@ -24,14 +25,103 @@ r = sr.Recognizer()
 m = sr.Microphone()
 doc = Document()
 
+class Manager(ScreenManager):
+    pass
+
+class BoyerMoore():
+    NO_OF_CHARS = 256
+
+    def badCharHeuristic(self, string, size) -> List[int]:
+        badChar = [-1] * self.NO_OF_CHARS
+        for i in range(size):
+            badChar[ord(string[i])] = i
+
+        return badChar
+
+    def search(self, txt, pat) -> List[int]:
+        occurList = []
+        m = len(pat)
+        n = len(txt)
+        badChar = self.badCharHeuristic(pat, m)
+
+        s = 0
+        while(s <= n - m):
+            j = m - 1
+            while j >= 0 and pat[j] == txt[s + j]:
+                j -= 1
+            if j < 0:
+                occurList.append(s)
+                s += (m - badChar[ord(txt[s + m])] if s + m < n else 1)
+            else:
+                s += max(1, j-badChar[ord(txt[s + j])])
+
+        return occurList
+
 class DocumentBuilder():
+    bm = BoyerMoore()
+    command_flags = dict(
+        negrito = False, 
+        itálico = False, 
+        sublinhado = False
+    )
+
     def title(self, newTitle) -> None:
         self.Title = newTitle
         doc.add_heading(self.Title, 0)
 
     def newParagraph(self, textList) -> None:
+        def insertionSort(arr):
+            for i in range(1, len(arr)):
+                key = arr[i]
+                j = i-1
+                while j >= 0 and key < arr[j] :
+                        arr[j + 1] = arr[j]
+                        j -= 1
+                arr[j + 1] = key
+
         text = " ".join(textList)
-        doc.add_paragraph(text)
+        p = doc.add_paragraph("")
+        refB = [self.bm.search(text, "[b]"), self.bm.search(text, "[/b]")]
+        refI = [self.bm.search(text, "[i]"), self.bm.search(text, "[/i]")]
+        refU = [self.bm.search(text, "[u]"), self.bm.search(text, "[/u]")]
+
+        auxList = []
+        sortedlist = []
+        snippetsBold = []
+        snippetsItalic = []
+        snippetsUnderline = []
+        
+        if len(refB[0]) == len(refB[1]):
+            for i in range(len(refB[0])):
+                snippetsBold.append([refB[0][i], refB[1][i], "B"])
+
+        if len(refI[0]) == len(refI[1]):
+            for i in range(len(refI[0])):
+                snippetsItalic.append([refI[0][i], refI[1][i], "I"])
+
+        if len(refU[0]) == len(refU[1]):
+            for i in range(len(refU[0])):
+                snippetsUnderline.append([refU[0][i], refU[1][i], "U"])
+
+        for i in snippetsBold:
+            auxList.append(i)
+
+        for i in snippetsItalic:
+            auxList.append(i)
+
+        for i in snippetsUnderline:
+            auxList.append(i)
+
+        print(auxList)
+
+        # for i, str in enumerate(snippetsBold):
+        #     print(str)
+        #     print(str[i])
+            # p.add_run(text[0:str[0]])
+            # p.add_run(text[str[0] + 3:str[1]]).bold = True
+            # p.add_run(" ")
+
+        # doc.add_paragraph(text)
 
     def builder(self) -> None:
         doc.add_page_break()
@@ -64,18 +154,15 @@ class FormateText():
             if "vírgula" in str.lower():
                 del(self.text[i])
                 self.text[i - 1] += self.command_action[str]
-
             elif "interrogação" in str.lower():
                 del(self.text[i])
                 self.text[i - 1] += self.command_action[str]
-            
             elif "novo" in str.lower() and i + 1 < limit:
                 command = self.text[i + 1].lower()
                 if command == "parágrafo":
                     del(self.text[i + 1])
                     del(self.text[i])
                     newParagraph = True
-
             elif "ativar" == str.lower() and i + 1 < limit:
                 command = self.text[i + 1].lower()
                 if command in commandKeys and not self.command_flags[command]:
@@ -83,7 +170,6 @@ class FormateText():
                     del(self.text[i])
                     self.text[i] = self.command_action[command][0] + self.text[i]
                     self.command_flags[command] = True
-
             elif "desativar" == str.lower() and i + 1 < limit:
                 command = self.text[i + 1].lower()
                 if command in commandKeys and self.command_flags[command]:
@@ -93,9 +179,6 @@ class FormateText():
                     self.command_flags[command] = False
 
         return([" ".join(self.text), newParagraph])
-
-class Manager(ScreenManager):
-    pass
 
 class Menu(Screen):
     def on_pre_enter(self) -> None:
@@ -190,9 +273,32 @@ class TextBoxContainer(Screen):
     def docxBuilder(self, *args) -> None:
         document = DocumentBuilder()
         document.title("Teste")
-        for textList in self.pheases:      
-            document.newParagraph(textList)
+        document.newParagraph(self.pheases[0])
+        # for textList in self.pheases:      
+        #     document.newParagraph(textList)
         document.builder()
+
+    def docPopup(self, *args, **kwargs) -> bool:
+        box = BoxLayout(orientation="vertical", padding=10, spacing=10)
+        popup = Popup(
+            title="Nome do documento", 
+            content=box,
+            size_hint=(None, None),
+            size=(sp(180), sp(150))
+        )
+        userInput = TextInput(text="")
+        buttons = BoxLayout(padding=sp(5), spacing=sp(10))
+        exitButton = RoundButton(text="Exportar", on_release=self.docxBuilder)
+
+        buttons.add_widget(exitButton)
+        box.add_widget(userInput)
+        box.add_widget(buttons)
+          
+        animation = Animation(size=(sp(300), sp(200)), duration=0.3, t="out_back")
+        animation.start(popup)
+        popup.open()
+
+        return True
 
     def messageError(self, msg, *args) -> bool:
         self.ids.image_mic.source = "icons/mic.png"
@@ -317,7 +423,7 @@ class LabelBox(Label):
 
     def on_size(self, *args) -> None:
         if self.width > 1024:
-            self.text_size = (self.width / 2, None)
+            self.text_size = (self.width / 1.6, None)
         else:
             self.text_size = (self.width - sp(50), None)
 
