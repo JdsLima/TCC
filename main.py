@@ -53,75 +53,73 @@ class BoyerMoore():
                 occurList.append(s)
                 s += (m - badChar[ord(txt[s + m])] if s + m < n else 1)
             else:
-                s += max(1, j-badChar[ord(txt[s + j])])
+                s += max(1, j - badChar[ord(txt[s + j])])
 
         return occurList
 
 class DocumentBuilder():
-    bm = BoyerMoore()
-    command_flags = dict(
-        negrito = False, 
-        itálico = False, 
-        sublinhado = False
-    )
-
     def title(self, newTitle) -> None:
         self.Title = newTitle
         doc.add_heading(self.Title, 0)
 
     def newParagraph(self, textList) -> None:
-        def insertionSort(arr):
-            for i in range(1, len(arr)):
-                key = arr[i]
-                j = i-1
-                while j >= 0 and key < arr[j] :
-                        arr[j + 1] = arr[j]
-                        j -= 1
-                arr[j + 1] = key
-
+        bm = BoyerMoore()
         text = " ".join(textList)
-        p = doc.add_paragraph("")
-        refB = [self.bm.search(text, "[b]"), self.bm.search(text, "[/b]")]
-        refI = [self.bm.search(text, "[i]"), self.bm.search(text, "[/i]")]
-        refU = [self.bm.search(text, "[u]"), self.bm.search(text, "[/u]")]
-
         auxList = []
         sortedlist = []
-        snippetsBold = []
-        snippetsItalic = []
-        snippetsUnderline = []
+        refB = [bm.search(text, "[b]"), bm.search(text, "[/b]")]
+        refI = [bm.search(text, "[i]"), bm.search(text, "[/i]")]
+        refU = [bm.search(text, "[u]"), bm.search(text, "[/u]")]
+        
+        p = doc.add_paragraph("")
         
         if len(refB[0]) == len(refB[1]):
             for i in range(len(refB[0])):
-                snippetsBold.append([refB[0][i], refB[1][i], "B"])
+                auxList.append([refB[0][i], refB[1][i], "B"])
 
         if len(refI[0]) == len(refI[1]):
             for i in range(len(refI[0])):
-                snippetsItalic.append([refI[0][i], refI[1][i], "I"])
+                auxList.append([refI[0][i], refI[1][i], "I"])
 
         if len(refU[0]) == len(refU[1]):
             for i in range(len(refU[0])):
-                snippetsUnderline.append([refU[0][i], refU[1][i], "U"])
+                auxList.append([refU[0][i], refU[1][i], "U"])
 
-        for i in snippetsBold:
-            auxList.append(i)
+        if len(auxList) <= 0:
+            p.add_run(text)
+        else:
+            sortedlist = sorted(auxList, key = lambda x: x[0])
 
-        for i in snippetsItalic:
-            auxList.append(i)
+            for i, list in enumerate(sortedlist):
+                if i + 1 == len(sortedlist):
+                    p.add_run(text[sortedlist[i - 1][1]:list[0]])
+                    if list[2] == "B":
+                        p.add_run(text[list[0] + 3:list[1]]).bold = True
+                        p.add_run(text[list[1] + 4:])
+                    elif list[2] == "I":
+                        p.add_run(text[list[0] + 3:list[1]]).italic = True
+                        p.add_run(text[list[1] + 4:])
+                    elif list[2] == "U":
+                        p.add_run(text[list[0] + 3:list[1]]).underline = True
+                        p.add_run(text[list[1] + 4:])
 
-        for i in snippetsUnderline:
-            auxList.append(i)
+                elif i == 0:
+                    p.add_run(text[0:list[0]])
+                    if list[2] == "B":
+                        p.add_run(text[list[0] + 3:list[1]]).bold = True
+                    elif list[2] == "I":
+                        p.add_run(text[list[0] + 3:list[1]]).italic = True
+                    elif list[2] == "U":
+                        p.add_run(text[list[0] + 3:list[1]]).underline = True
 
-        print(auxList)
-
-        # for i, str in enumerate(snippetsBold):
-        #     print(str)
-        #     print(str[i])
-            # p.add_run(text[0:str[0]])
-            # p.add_run(text[str[0] + 3:str[1]]).bold = True
-            # p.add_run(" ")
-
-        # doc.add_paragraph(text)
+                else:
+                    p.add_run(text[sortedlist[i - 1][1] + 4:list[0]])
+                    if list[2] == "B":
+                        p.add_run(text[list[0] + 3:list[1]]).bold = True
+                    elif list[2] == "I": 
+                        p.add_run(text[list[0] + 3:list[1]]).italic = True
+                    elif list[2] == "U":
+                        p.add_run(text[list[0] + 3:list[1]]).underline = True
 
     def builder(self) -> None:
         doc.add_page_break()
