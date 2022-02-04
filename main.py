@@ -63,16 +63,15 @@ class DocumentBuilder():
         doc.add_heading(self.Title, 0)
 
     def newParagraph(self, textList) -> None:
-        bm = BoyerMoore()
-        text = " ".join(textList)
         auxList = []
         sortedlist = []
+        bm = BoyerMoore()
+        p = doc.add_paragraph()
+        text = " ".join(textList)
         refB = [bm.search(text, "[b]"), bm.search(text, "[/b]")]
         refI = [bm.search(text, "[i]"), bm.search(text, "[/i]")]
         refU = [bm.search(text, "[u]"), bm.search(text, "[/u]")]
-        
-        p = doc.add_paragraph("")
-        
+              
         if len(refB[0]) == len(refB[1]):
             for i in range(len(refB[0])):
                 auxList.append([refB[0][i], refB[1][i], "B"])
@@ -87,39 +86,39 @@ class DocumentBuilder():
 
         if len(auxList) <= 0:
             p.add_run(text)
+        elif len(auxList) == 1:
+            p.add_run(text[0:auxList[0][0]])
+            runner = p.add_run(text[auxList[0][0] + 3:auxList[0][1]])
+            if auxList[0][2] == "B":
+                runner.bold = True
+            elif auxList[0][2] == "I":
+                runner.italic = True
+            else:
+                runner.underline = True
+            p.add_run(text[auxList[0][1] + 4:])
         else:
             sortedlist = sorted(auxList, key = lambda x: x[0])
 
+            def stylizeText(list):
+                runner = p.add_run(text[list[0] + 3:list[1]])
+                if list[2] == "B":
+                    runner.bold = True
+                elif list[2] == "I":
+                    runner.italic = True
+                elif list[2] == "U":
+                    runner.underline = True
+
             for i, list in enumerate(sortedlist):
                 if i + 1 == len(sortedlist):
-                    p.add_run(text[sortedlist[i - 1][1]:list[0]])
-                    if list[2] == "B":
-                        p.add_run(text[list[0] + 3:list[1]]).bold = True
-                        p.add_run(text[list[1] + 4:])
-                    elif list[2] == "I":
-                        p.add_run(text[list[0] + 3:list[1]]).italic = True
-                        p.add_run(text[list[1] + 4:])
-                    elif list[2] == "U":
-                        p.add_run(text[list[0] + 3:list[1]]).underline = True
-                        p.add_run(text[list[1] + 4:])
-
+                    p.add_run(text[sortedlist[i - 1][1] + 4:list[0]])
+                    stylizeText(list)
+                    p.add_run(text[list[1] + 4:])
                 elif i == 0:
                     p.add_run(text[0:list[0]])
-                    if list[2] == "B":
-                        p.add_run(text[list[0] + 3:list[1]]).bold = True
-                    elif list[2] == "I":
-                        p.add_run(text[list[0] + 3:list[1]]).italic = True
-                    elif list[2] == "U":
-                        p.add_run(text[list[0] + 3:list[1]]).underline = True
-
+                    stylizeText(list)
                 else:
                     p.add_run(text[sortedlist[i - 1][1] + 4:list[0]])
-                    if list[2] == "B":
-                        p.add_run(text[list[0] + 3:list[1]]).bold = True
-                    elif list[2] == "I": 
-                        p.add_run(text[list[0] + 3:list[1]]).italic = True
-                    elif list[2] == "U":
-                        p.add_run(text[list[0] + 3:list[1]]).underline = True
+                    stylizeText(list)
 
     def builder(self) -> None:
         doc.add_page_break()
