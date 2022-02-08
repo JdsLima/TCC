@@ -1,9 +1,9 @@
 import json
 from kivy.app import App
-from typing import Union
 from docx import Document
 from kivy.metrics import sp
 from kivy.clock import Clock
+from typing import List, Union
 from kivy.config import Config
 import speech_recognition as sr
 from kivy.uix.popup import Popup
@@ -11,18 +11,24 @@ from kivy.uix.label import Label
 from kivy.uix.image import Image
 from kivy.core.window import Window
 from kivy.animation import Animation
+from kivy.uix.textinput import TextInput
 from kivy.uix.boxlayout import BoxLayout
 from kivy.properties import ListProperty
 from kivy.graphics import RoundedRectangle, Color
 from kivy.uix.behaviors.button import ButtonBehavior
 from kivy.uix.screenmanager import ScreenManager, Screen
 
-Config.set('kivy','window_icon','icons/logo.png')
+Config.set('kivy', 'window_icon', 'icons/logo.png')
 Config.write()
 
 r = sr.Recognizer()
 m = sr.Microphone()
 doc = Document()
+
+
+class Manager(ScreenManager):
+    pass
+
 
 class DocumentBuilder():
     def title(self, newTitle) -> None:
@@ -30,29 +36,71 @@ class DocumentBuilder():
         doc.add_heading(self.Title, 0)
 
     def newParagraph(self, textList) -> None:
-        text = " ".join(textList)
-        doc.add_paragraph(text)
+        command_flags = dict(
+            negrito=False,
+            itálico=False,
+            sublinhado=False
+        )
+        p = doc.add_paragraph()
+        wordsList = []
+
+        for i in textList:
+            wordsList.extend(i.split())
+
+        for str in wordsList:
+            if len(str) > 3:
+                if "[b]" in str:
+                    command_flags["negrito"] = True
+                    str = str.split("[b]")[1]
+                if "[i]" in str:
+                    command_flags["itálico"] = True
+                    str = str.split("[i]")[1]
+                if "[u]" in str:
+                    command_flags["sublinhado"] = True
+                    str = str.split("[u]")[1]
+
+                if "[/b]" in str:
+                    command_flags["negrito"] = False
+                    p.add_run(str.split("[/b]")[0]).bold = True
+                    str = ""
+                if "[/i]" in str:
+                    command_flags["itálico"] = False
+                    p.add_run(str.split("[/i]")[0]).italic = True
+                    str = ""
+                if "[/u]" in str:
+                    command_flags["sublinhado"] = False
+                    p.add_run(str.split("[/u]")[0]).underline = True
+                    str = ""
+
+            runner = p.add_run(str + " ")
+            if command_flags["negrito"] == True:
+                runner.bold = True
+            if command_flags["itálico"] == True:
+                runner.italic = True
+            if command_flags["sublinhado"] == True:
+                runner.underline = True
 
     def builder(self) -> None:
         doc.add_page_break()
         doc.save(self.Title + '.docx')
+
 
 class FormateText():
     def __init__(self, text) -> None:
         self.text = text
 
     command_flags = dict(
-        negrito = False, 
-        itálico = False, 
-        sublinhado = False
+        negrito=False,
+        itálico=False,
+        sublinhado=False
     )
 
     command_action = dict(
-        negrito = ["[b]", "[/b]"],
-        itálico = ["[i]", "[/i]"],
-        sublinhado = ["[u]", "[/u]"],
-        vírgula = ",",
-        interrogação = "?"
+        negrito=["[b]", "[/b]"],
+        itálico=["[i]", "[/i]"],
+        sublinhado=["[u]", "[/u]"],
+        vírgula=",",
+        interrogação="?"
     )
 
     def formate(self) -> Union[str, bool]:
@@ -64,26 +112,23 @@ class FormateText():
             if "vírgula" in str.lower():
                 del(self.text[i])
                 self.text[i - 1] += self.command_action[str]
-
             elif "interrogação" in str.lower():
                 del(self.text[i])
                 self.text[i - 1] += self.command_action[str]
-            
             elif "novo" in str.lower() and i + 1 < limit:
                 command = self.text[i + 1].lower()
                 if command == "parágrafo":
                     del(self.text[i + 1])
                     del(self.text[i])
                     newParagraph = True
-
             elif "ativar" == str.lower() and i + 1 < limit:
                 command = self.text[i + 1].lower()
                 if command in commandKeys and not self.command_flags[command]:
                     del(self.text[i + 1])
                     del(self.text[i])
-                    self.text[i] = self.command_action[command][0] + self.text[i]
+                    self.text[i] = self.command_action[command][0] + \
+                        self.text[i]
                     self.command_flags[command] = True
-
             elif "desativar" == str.lower() and i + 1 < limit:
                 command = self.text[i + 1].lower()
                 if command in commandKeys and self.command_flags[command]:
@@ -94,8 +139,6 @@ class FormateText():
 
         return([" ".join(self.text), newParagraph])
 
-class Manager(ScreenManager):
-    pass
 
 class Menu(Screen):
     def on_pre_enter(self) -> None:
@@ -104,32 +147,35 @@ class Menu(Screen):
     def confirm_exit(self, *args, **kwargs) -> bool:
         box = BoxLayout(orientation="vertical", padding=10, spacing=10)
         popup = Popup(
-            title="Deseja realmente sair?", 
+            title="Deseja realmente sair?",
             content=box,
             size_hint=(None, None),
             size=(sp(150), sp(100))
         )
         buttons = BoxLayout(padding=sp(5), spacing=sp(10))
-        exitButton = RoundButton(text="Sim", on_release=App.get_running_app().stop)
+        exitButton = RoundButton(
+            text="Sim", on_release=App.get_running_app().stop)
         closeButton = RoundButton(text="Não", on_release=popup.dismiss)
 
         buttons.add_widget(exitButton)
         buttons.add_widget(closeButton)
         box.add_widget(Image(source="icons/warning.png"))
         box.add_widget(buttons)
-          
-        animation = Animation(size=(sp(300), sp(200)), duration=0.3, t="out_back")
+
+        animation = Animation(size=(sp(300), sp(200)),
+                              duration=0.3, t="out_back")
         animation.start(popup)
         popup.open()
 
         return True
 
-class RoundButton(ButtonBehavior, Label):
-    cor = ListProperty([0.1, 0.5, 0.8,1])
-    cor2 = ListProperty([0.3,0.1,0.9,1])
 
-    def __init__(self,**kwargs) -> None:
-        super(RoundButton,self).__init__(**kwargs)
+class RoundButton(ButtonBehavior, Label):
+    cor = ListProperty([0.1, 0.5, 0.8, 1])
+    cor2 = ListProperty([0.3, 0.1, 0.9, 1])
+
+    def __init__(self, **kwargs) -> None:
+        super(RoundButton, self).__init__(**kwargs)
         self.update()
 
     def on_pos(self, *args) -> None:
@@ -153,11 +199,12 @@ class RoundButton(ButtonBehavior, Label):
             Color(rgba=self.cor)
             RoundedRectangle(pos=self.pos, size=self.size, radius=[20])
 
+
 class TextBoxContainer(Screen):
     pheases = [[]]
     path = ''
 
-    def on_pre_enter(self, *args)  -> None:
+    def on_pre_enter(self, *args) -> None:
         super().on_pre_enter(*args)
         self.ids.textBox.clear_widgets()
         self.path = App.get_running_app().user_data_dir + "/"
@@ -182,23 +229,45 @@ class TextBoxContainer(Screen):
         except FileNotFoundError:
             print("Arquivo não encontrado no caminho: {}".format(self.path))
 
-
     def saveData(self) -> None:
         with open(self.path + "data.json", "w") as data:
             json.dump(self.pheases, data)
-    
+
     def docxBuilder(self, *args) -> None:
         document = DocumentBuilder()
         document.title("Teste")
-        for textList in self.pheases:      
+        for textList in self.pheases:
             document.newParagraph(textList)
         document.builder()
+
+    def docPopup(self, *args, **kwargs) -> bool:
+        box = BoxLayout(orientation="vertical", padding=10, spacing=10)
+        popup = Popup(
+            title="Nome do documento",
+            content=box,
+            size_hint=(None, None),
+            size=(sp(180), sp(150))
+        )
+        userInput = TextInput(text="")
+        buttons = BoxLayout(padding=sp(5), spacing=sp(10))
+        exitButton = RoundButton(text="Exportar", on_release=self.docxBuilder)
+
+        buttons.add_widget(exitButton)
+        box.add_widget(userInput)
+        box.add_widget(buttons)
+
+        animation = Animation(size=(sp(300), sp(200)),
+                              duration=0.3, t="out_back")
+        animation.start(popup)
+        popup.open()
+
+        return True
 
     def messageError(self, msg, *args) -> bool:
         self.ids.image_mic.source = "icons/mic.png"
         box = BoxLayout(orientation="vertical", padding=10, spacing=10)
         popup = Popup(
-            title="Ops, ocorreu um erro!", 
+            title="Ops, ocorreu um erro!",
             content=box,
             size_hint=(None, None),
             size=(sp(150), sp(150))
@@ -207,7 +276,8 @@ class TextBoxContainer(Screen):
         labelMsg = Label(text=msg, bold=True, font_size='16sp')
         box.add_widget(Image(source="icons/logo.png"))
         box.add_widget(labelMsg)
-        animation = Animation(size=(sp(330), sp(200)), duration=0.3, t="out_back")
+        animation = Animation(size=(sp(330), sp(200)),
+                              duration=0.3, t="out_back")
         animation.start(popup)
 
         popup.open()
@@ -238,23 +308,24 @@ class TextBoxContainer(Screen):
     def listen(self, *args) -> None:
         with m as source:
             audio = r.listen(source)
-        
+
         try:
             # Reconhecendo com API do google
             value = r.recognize_google(audio, language='pt-BR')
             self.message(value)
-        
+
         except sr.UnknownValueError:
             self.messageError("Não entendi o que você falou.")
-        
+
         except sr.RequestError as e:
             self.messageError("Não consigo conectar ao servidor :(")
             print("ERROR ====> {0}".format(e))
-    
+
     def initRecorder(self, *args) -> None:
         self.ids.image_mic.source = "icons/mic_active.png"
         # Atrasa a execução da método listen() em 0.3 segundos
         Clock.schedule_once(self.listen, 0.3)
+
 
 class Instructions(Screen):
     def on_pre_enter(self, *args) -> None:
@@ -264,52 +335,58 @@ class Instructions(Screen):
         title = "Introdução"
         subTitle = "Comandos"
 
-        introduction = ("Para que o reconhecimento de fala funcione"
-        " corretamente, é muito importante que você esteja em um lugar"
-        " com pouco barulho. Além disso, verifique nas configurações" 
-        " de seu microfone se o volume está muito alto (volume muito"
-        " alto pode ser prejudicial, pois faz o microfone capturar muitos"
-        " ruídos e portanto, dificulta o sistema de reconhecimento).")
+        intro = ("Para que o reconhecimento de fala funcione"
+                 " corretamente, é muito importante que você esteja em um lugar"
+                 " com pouco barulho. Além disso, verifique nas configurações"
+                 " de seu microfone se o volume está muito alto (volume muito"
+                 " alto pode ser prejudicial, pois faz o microfone capturar muitos"
+                 " ruídos e portanto, dificulta o sistema de reconhecimento).")
 
         bold = ("[b]Negrito:[/b]\n\nPara ativar o negrito basta dizer"
-        " [b]\"ativar negrito\"[/b] que tudo o que for dito em seguida"
-        " ficará em negrito. Para desativá-lo basta dizer " 
-        "[b]\"desativar negrito\"[/b] e continuar falando normalmente.")
+                " [b]\"ativar negrito\"[/b] que tudo o que for dito em seguida"
+                " ficará em negrito. Para desativá-lo basta dizer "
+                "[b]\"desativar negrito\"[/b] e continuar falando normalmente.")
 
         italic = ("[b]Itálico:[/b]\n\nPara ativar o itálico basta dizer"
-        " [b]\"ativar itálico\"[/b] que tudo o que for dito em seguida"
-        " ficará em itálico. Para desativá-lo basta dizer " 
-        "[b]\"desativar itálico\"[/b] e continuar falando normalmente.")
+                  " [b]\"ativar itálico\"[/b] que tudo o que for dito em seguida"
+                  " ficará em itálico. Para desativá-lo basta dizer "
+                  "[b]\"desativar itálico\"[/b] e continuar falando normalmente.")
 
         underline = ("[b]Sublinhado:[/b]\n\nPara ativar o sublinhado basta dizer"
-        " [b]\"ativar sublinhado\"[/b] que tudo o que for dito em seguida"
-        " ficará em sublinhado. Para desativá-lo basta dizer " 
-        "[b]\"desativar sublinhado\"[/b] e continuar falando normalmente.")
+                     " [b]\"ativar sublinhado\"[/b] que tudo o que for dito em seguida"
+                     " ficará em sublinhado. Para desativá-lo basta dizer "
+                     "[b]\"desativar sublinhado\"[/b] e continuar falando normalmente.")
 
         paragraph = ("[b]Novo parágrafo:[/b]\n\nPara adicionar um novo parágrafo"
-        " basta dizer [b]\"novo parágrafo\"[/b] e continuar falando o seu texto.")
+                     " basta dizer [b]\"novo parágrafo\"[/b] e continuar falando o seu texto.")
 
         self.ids.textBoxIntructions.add_widget(LabelBox(
             text=title,
-            underline = True,
+            underline=True,
             font_name='Roboto-Bold',
-            font_size = 20,
-            color = [0.4, 0.4, 0.4, 1],
-            halign= 'center'
+            font_size=20,
+            color=[0.4, 0.4, 0.4, 1],
+            halign='center'
         ))
-        self.ids.textBoxIntructions.add_widget(LabelBox(text=introduction, halign='justify'))
+        self.ids.textBoxIntructions.add_widget(
+            LabelBox(text=intro, halign='justify'))
         self.ids.textBoxIntructions.add_widget(LabelBox(
             text=subTitle,
-            underline = True,
+            underline=True,
             font_name='Roboto-Bold',
-            font_size = 20,
-            color = [0.4, 0.4, 0.4, 1],
-            halign= 'center'
+            font_size=20,
+            color=[0.4, 0.4, 0.4, 1],
+            halign='center'
         ))
-        self.ids.textBoxIntructions.add_widget(LabelBox(text=bold, halign='justify'))
-        self.ids.textBoxIntructions.add_widget(LabelBox(text=italic, halign='justify'))
-        self.ids.textBoxIntructions.add_widget(LabelBox(text=underline, halign='justify'))
-        self.ids.textBoxIntructions.add_widget(LabelBox(text=paragraph, halign='justify'))
+        self.ids.textBoxIntructions.add_widget(
+            LabelBox(text=bold, halign='justify'))
+        self.ids.textBoxIntructions.add_widget(
+            LabelBox(text=italic, halign='justify'))
+        self.ids.textBoxIntructions.add_widget(
+            LabelBox(text=underline, halign='justify'))
+        self.ids.textBoxIntructions.add_widget(
+            LabelBox(text=paragraph, halign='justify'))
+
 
 class LabelBox(Label):
     def __init__(self, **kwargs) -> None:
@@ -317,7 +394,7 @@ class LabelBox(Label):
 
     def on_size(self, *args) -> None:
         if self.width > 1024:
-            self.text_size = (self.width / 2, None)
+            self.text_size = (self.width / 1.6, None)
         else:
             self.text_size = (self.width - sp(50), None)
 
@@ -325,13 +402,16 @@ class LabelBox(Label):
         self.size = self.texture_size
         self.height += sp(20)
 
+
 class Yumi(App):
     def build(self):
         with m as source:
             # Ajusta o ruído
             r.adjust_for_ambient_noise(source)
-            print("Definindo limite mínimo de percepção para {}".format(r.energy_threshold))
+            print("Definindo limite mínimo de percepção para {}".format(
+                r.energy_threshold))
         return Manager()
+
 
 if __name__ == '__main__':
     Yumi().run()
