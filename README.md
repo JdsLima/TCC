@@ -24,3 +24,8 @@ pip install SpeechRecognition
 ```bash
 sudo apt install xclip
 ```
+
+### instala o python-docx
+```bash
+pip install python-docx
+```

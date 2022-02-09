@@ -1,4 +1,5 @@
-a = ["ab", "bb", "cb"]
+import random
 
-for i in a:
-    print(i.split("b")[0])
+hash = random.getrandbits(32)
+
+print("hash value: %08x" % hash)

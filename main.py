@@ -1,9 +1,13 @@
+import os 
 import json
+import random
+import platform
 from kivy.app import App
+from pathlib import Path
+from typing import Union
 from docx import Document
 from kivy.metrics import sp
 from kivy.clock import Clock
-from typing import List, Union
 from kivy.config import Config
 import speech_recognition as sr
 from kivy.uix.popup import Popup
@@ -82,7 +86,22 @@ class DocumentBuilder():
 
     def builder(self) -> None:
         doc.add_page_break()
-        doc.save(self.Title + '.docx')
+        path, home = "", ""
+        so = platform.system()
+
+        if so == "Windows":
+            home = Path.home() / "Documents"
+        elif so == "Linux":
+            home = Path.home() / "Documentos"
+
+        path = os.path.join(home, "Yumi")
+
+        try: 
+            os.mkdir(path) 
+        except OSError as error: 
+            print(error)
+
+        doc.save("{}/{}.docx".format(path, self.Title))
 
 
 class FormateText():
@@ -234,8 +253,9 @@ class TextBoxContainer(Screen):
             json.dump(self.pheases, data)
 
     def docxBuilder(self, *args) -> None:
+        hash = random.getrandbits(32)
         document = DocumentBuilder()
-        document.title("Teste")
+        document.title(self.userInput.text or "doc_%08x" % hash)
         for textList in self.pheases:
             document.newParagraph(textList)
         document.builder()
@@ -246,17 +266,23 @@ class TextBoxContainer(Screen):
             title="Nome do documento",
             content=box,
             size_hint=(None, None),
-            size=(sp(180), sp(150))
-        )
-        userInput = TextInput(text="")
+            size=(sp(180), sp(150)))
+        self.userInput = TextInput(
+            text="",
+            size_hint_y=None,
+            height=35,
+            font_size=18,
+            foreground_color=[1, 1, 1, 1],
+            cursor_color=[1, 1, 1, 1],
+            background_color=[0.48, 0.44, 0.44, 1])
         buttons = BoxLayout(padding=sp(5), spacing=sp(10))
         exitButton = RoundButton(text="Exportar", on_release=self.docxBuilder)
 
         buttons.add_widget(exitButton)
-        box.add_widget(userInput)
+        box.add_widget(self.userInput)
         box.add_widget(buttons)
 
-        animation = Animation(size=(sp(300), sp(200)),
+        animation = Animation(size=(sp(300), sp(180)),
                               duration=0.3, t="out_back")
         animation.start(popup)
         popup.open()
