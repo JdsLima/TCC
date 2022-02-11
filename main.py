@@ -1,4 +1,4 @@
-import os 
+import os
 import json
 import random
 import platform
@@ -13,6 +13,7 @@ import speech_recognition as sr
 from kivy.uix.popup import Popup
 from kivy.uix.label import Label
 from kivy.uix.image import Image
+from kivy.uix.switch import Switch
 from kivy.core.window import Window
 from kivy.animation import Animation
 from kivy.uix.textinput import TextInput
@@ -27,7 +28,6 @@ Config.write()
 
 r = sr.Recognizer()
 m = sr.Microphone()
-doc = Document()
 
 
 class Manager(ScreenManager):
@@ -35,9 +35,15 @@ class Manager(ScreenManager):
 
 
 class DocumentBuilder():
-    def title(self, newTitle) -> None:
+    def __init__(self) -> None:
+        self.doc = Document()
+
+    def folderTitle(self, newTitle) -> None:
+        self.FolderTitle = newTitle
+
+    def docTitle(self, newTitle) -> None:
         self.Title = newTitle
-        doc.add_heading(self.Title, 0)
+        self.doc.add_heading(self.Title, 0)
 
     def newParagraph(self, textList) -> None:
         command_flags = dict(
@@ -45,7 +51,7 @@ class DocumentBuilder():
             itálico=False,
             sublinhado=False
         )
-        p = doc.add_paragraph()
+        p = self.doc.add_paragraph()
         wordsList = []
 
         for i in textList:
@@ -85,7 +91,7 @@ class DocumentBuilder():
                 runner.underline = True
 
     def builder(self) -> None:
-        doc.add_page_break()
+        self.doc.add_page_break()
         path, home = "", ""
         so = platform.system()
 
@@ -96,12 +102,12 @@ class DocumentBuilder():
 
         path = os.path.join(home, "Yumi")
 
-        try: 
-            os.mkdir(path) 
-        except OSError as error: 
+        try:
+            os.mkdir(path)
+        except OSError as error:
             print(error)
 
-        doc.save("{}/{}.docx".format(path, self.Title))
+        self.doc.save("{}/{}.docx".format(path, self.FolderTitle))
 
 
 class FormateText():
@@ -254,38 +260,53 @@ class TextBoxContainer(Screen):
 
     def docxBuilder(self, *args) -> None:
         hash = random.getrandbits(32)
+        title = self.userInput.text or "doc_%08x" % hash
         document = DocumentBuilder()
-        document.title(self.userInput.text or "doc_%08x" % hash)
+        document.folderTitle(title)
+
+        if self.switchValue:
+            document.docTitle(title)
+
         for textList in self.pheases:
             document.newParagraph(textList)
+
         document.builder()
+        self.popup.dismiss()
 
     def docPopup(self, *args, **kwargs) -> bool:
+        self.switchValue = True
+
+        def updateSwitchValue(value) -> None:
+            self.switchValue = value
+
+        def onChange(self, value) -> None:
+            updateSwitchValue(True if value else False)
+
         box = BoxLayout(orientation="vertical", padding=10, spacing=10)
-        popup = Popup(
+        self.popup = Popup(
             title="Nome do documento",
             content=box,
             size_hint=(None, None),
-            size=(sp(180), sp(150)))
-        self.userInput = TextInput(
-            text="",
-            size_hint_y=None,
-            height=35,
-            font_size=18,
-            foreground_color=[1, 1, 1, 1],
-            cursor_color=[1, 1, 1, 1],
-            background_color=[0.48, 0.44, 0.44, 1])
+            size=(sp(200), sp(200)))
+        self.userInput = UserInput()
         buttons = BoxLayout(padding=sp(5), spacing=sp(10))
+        box2 = BoxLayout(spacing=sp(10))
+        label = Label(text="Usar como Título")
+        switch = Switch(active=True)
+        switch.bind(active=onChange)
         exitButton = RoundButton(text="Exportar", on_release=self.docxBuilder)
 
         buttons.add_widget(exitButton)
+        box2.add_widget(label)
+        box2.add_widget(switch)
         box.add_widget(self.userInput)
+        box.add_widget(box2)
         box.add_widget(buttons)
 
-        animation = Animation(size=(sp(300), sp(180)),
+        animation = Animation(size=(sp(320), sp(220)),
                               duration=0.3, t="out_back")
-        animation.start(popup)
-        popup.open()
+        animation.start(self.popup)
+        self.popup.open()
 
         return True
 
@@ -414,8 +435,13 @@ class Instructions(Screen):
             LabelBox(text=paragraph, halign='justify'))
 
 
+class UserInput(TextInput):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+
 class LabelBox(Label):
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
     def on_size(self, *args) -> None:
