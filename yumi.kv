@@ -131,25 +131,16 @@
                 orientation: "vertical"
                 size_hint_y: None
                 height: self.minimum_height
+<UserInput>:
+    size_hint_y: None
+    height: 35
+    font_size: 18
+    foreground_color: [1, 1, 1, 1]
+    cursor_color: [1, 1, 1, 1]
+    background_color: [0.48, 0.44, 0.44, 1]
 
 <LabelBox>:
     markup: True
     size_hint: (1, None)
     font_size: sp(15)
     color: (0, 0, 0 ,1)
-
-<CustomDropDown>:
-    Button:
-        text: 'My first Item'
-        size_hint_y: None
-        height: 44
-        on_release: root.select('item1')
-    Label:
-        text: 'Unselectable item'
-        size_hint_y: None
-        height: 44
-    Button:
-        text: 'My second Item'
-        size_hint_y: None
-        height: 44
-        on_release: root.select('item2')
