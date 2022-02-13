@@ -38,12 +38,11 @@ class DocumentBuilder():
     def __init__(self) -> None:
         self.doc = Document()
 
-    def folderTitle(self, newTitle) -> None:
-        self.FolderTitle = newTitle
+    def fileTitle(self, newTitle) -> None:
+        self.FileTitle = newTitle
 
     def docTitle(self, newTitle) -> None:
-        self.Title = newTitle
-        self.doc.add_heading(self.Title, 0)
+        self.doc.add_heading(newTitle, 0)
 
     def newParagraph(self, textList) -> None:
         command_flags = dict(
@@ -107,7 +106,7 @@ class DocumentBuilder():
         except OSError as error:
             print(error)
 
-        self.doc.save("{}/{}.docx".format(path, self.FolderTitle))
+        self.doc.save("{}/{}.docx".format(path, self.FileTitle))
 
 
 class FormateText():
@@ -132,6 +131,8 @@ class FormateText():
         commandKeys = self.command_flags.keys()
         limit = len(self.text) - 1
         newParagraph = False
+        delParagraph = False
+        correct = False
 
         for i, str in enumerate(self.text):
             if "vírgula" in str.lower():
@@ -161,8 +162,17 @@ class FormateText():
                     del(self.text[i])
                     self.text[i - 1] += self.command_action[command][1]
                     self.command_flags[command] = False
+            elif "apagar" in str.lower() and i + 1 <= limit:
+                command = self.text[i + 1].lower()
+                if command == "parágrafo":
+                    delParagraph = True
+            elif "corrigir" in str.lower() and i + 1 <= limit:
+                if(self.text[i + 1].lower() == "por"):
+                    del(self.text[i + 1])
+                    del(self.text[i])
+                    correct = True
 
-        return([" ".join(self.text), newParagraph])
+        return([" ".join(self.text), newParagraph, delParagraph, correct])
 
 
 class Menu(Screen):
@@ -234,18 +244,21 @@ class TextBoxContainer(Screen):
         self.ids.textBox.clear_widgets()
         self.path = App.get_running_app().user_data_dir + "/"
         self.readData()
-        Window.bind(on_keyboard=self.comeBack)
+        Window.bind(on_keyboard=self.keyInterrupt)
         for phease in self.pheases:
             self.ids.textBox.add_widget(LabelBox(text=" ".join(phease)))
 
-    def comeBack(self, window, key, *args) -> None:
+    def keyInterrupt(self, window, key, *args) -> bool:
+        if key == 32:
+            self.initRecorder()
         if key == 27:
             App.get_running_app().root.current = "menu"
-            return True
+        
+        return True
 
     def on_pre_leave(self, *args) -> None:
         super().on_pre_leave(*args)
-        Window.unbind(on_keyboard=self.comeBack)
+        Window.unbind(on_keyboard=self.keyInterrupt)
 
     def readData(self, *args) -> None:
         try:
@@ -262,7 +275,7 @@ class TextBoxContainer(Screen):
         hash = random.getrandbits(32)
         title = self.userInput.text or "doc_%08x" % hash
         document = DocumentBuilder()
-        document.folderTitle(title)
+        document.fileTitle(title)
 
         if self.switchValue:
             document.docTitle(title)
@@ -331,7 +344,8 @@ class TextBoxContainer(Screen):
         return True
 
     def message(self, msg, *args) -> None:
-        phease, newParagraph = FormateText(msg.split()).formate()
+        [phease, newParagraph, delParagraph, correct] = FormateText(
+            msg.split()).formate()
         self.ids.image_mic.source = "icons/mic.png"
         textBoxTree = self.ids.textBox.children
         pheasesLen = len(self.pheases)
@@ -339,6 +353,16 @@ class TextBoxContainer(Screen):
         if newParagraph:
             self.ids.textBox.add_widget(LabelBox(text=phease))
             self.pheases.append([phease])
+        elif delParagraph:
+            self.pheases.pop()
+            self.ids.textBox.remove_widget(self.ids.textBox.children[0])
+        elif correct:
+            list_index = pheasesLen - 1
+            self.pheases[list_index].append(phease)
+            aux_list = self.pheases[list_index]
+            aux_list.pop(len(aux_list) - 2)
+            self.pheases[list_index] = aux_list
+            self.ids.textBox.children[0].text = " ".join(aux_list)
         elif len(textBoxTree) > 0:
             self.ids.textBox.children[0].text += " " + phease
             self.pheases[pheasesLen - 1].append(phease)
@@ -383,29 +407,37 @@ class Instructions(Screen):
         subTitle = "Comandos"
 
         intro = ("Para que o reconhecimento de fala funcione"
-                 " corretamente, é muito importante que você esteja em um lugar"
-                 " com pouco barulho. Além disso, verifique nas configurações"
-                 " de seu microfone se o volume está muito alto (volume muito"
-                 " alto pode ser prejudicial, pois faz o microfone capturar muitos"
-                 " ruídos e portanto, dificulta o sistema de reconhecimento).")
+        " corretamente, é muito importante que você esteja em um lugar"
+        " com pouco barulho. Além disso, verifique nas configurações"
+        " de seu microfone se o volume está muito alto (volume muito"
+        " alto pode ser prejudicial, pois faz o microfone capturar muitos"
+        " ruídos e portanto, dificulta o sistema de reconhecimento).")
 
         bold = ("[b]Negrito:[/b]\n\nPara ativar o negrito basta dizer"
-                " [b]\"ativar negrito\"[/b] que tudo o que for dito em seguida"
-                " ficará em negrito. Para desativá-lo basta dizer "
-                "[b]\"desativar negrito\"[/b] e continuar falando normalmente.")
+        " [b]\"ativar negrito\"[/b] que tudo o que for dito em seguida"
+        " ficará em negrito. Para desativá-lo basta dizer "
+        "[b]\"desativar negrito\"[/b] e continuar falando normalmente.")
 
         italic = ("[b]Itálico:[/b]\n\nPara ativar o itálico basta dizer"
-                  " [b]\"ativar itálico\"[/b] que tudo o que for dito em seguida"
-                  " ficará em itálico. Para desativá-lo basta dizer "
-                  "[b]\"desativar itálico\"[/b] e continuar falando normalmente.")
+        " [b]\"ativar itálico\"[/b] que tudo o que for dito em seguida"
+        " ficará em itálico. Para desativá-lo basta dizer "
+        "[b]\"desativar itálico\"[/b] e continuar falando normalmente.")
 
         underline = ("[b]Sublinhado:[/b]\n\nPara ativar o sublinhado basta dizer"
-                     " [b]\"ativar sublinhado\"[/b] que tudo o que for dito em seguida"
-                     " ficará em sublinhado. Para desativá-lo basta dizer "
-                     "[b]\"desativar sublinhado\"[/b] e continuar falando normalmente.")
+        " [b]\"ativar sublinhado\"[/b] que tudo o que for dito em seguida"
+        " ficará em sublinhado. Para desativá-lo basta dizer "
+        "[b]\"desativar sublinhado\"[/b] e continuar falando normalmente.")
 
         paragraph = ("[b]Novo parágrafo:[/b]\n\nPara adicionar um novo parágrafo"
-                     " basta dizer [b]\"novo parágrafo\"[/b] e continuar falando o seu texto.")
+        " basta dizer [b]\"novo parágrafo\"[/b] que o sistema automaticamente"
+        " colocará tudo o que for dito em seguida em um novo parágrafo")
+
+        delParagraph = ("[b]Apagar parágrafo:[/b]\n\nPara apagar o último parágrafo"
+        " do seu texto basta dizer [b]\"apagar parágrafo\"[/b].")
+
+        correcPhease = ("[b]Corrigir frase:[/b]\n\nCaso você precise corrigir"
+        "a última frase dita, basta dizer [b]\"corrigir por...\"[/b]."
+        " seguido da nova frase que o sistema deve substituir.")
 
         self.ids.textBoxIntructions.add_widget(LabelBox(
             text=title,
@@ -433,6 +465,10 @@ class Instructions(Screen):
             LabelBox(text=underline, halign='justify'))
         self.ids.textBoxIntructions.add_widget(
             LabelBox(text=paragraph, halign='justify'))
+        self.ids.textBoxIntructions.add_widget(
+            LabelBox(text=delParagraph, halign='justify'))
+        self.ids.textBoxIntructions.add_widget(
+            LabelBox(text=correcPhease, halign='justify'))
 
 
 class UserInput(TextInput):
