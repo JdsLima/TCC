@@ -38,8 +38,8 @@ class DocumentBuilder():
     def __init__(self) -> None:
         self.doc = Document()
 
-    def folderTitle(self, newTitle) -> None:
-        self.FolderTitle = newTitle
+    def fileTitle(self, newTitle) -> None:
+        self.FileTitle = newTitle
 
     def docTitle(self, newTitle) -> None:
         self.Title = newTitle
@@ -107,7 +107,7 @@ class DocumentBuilder():
         except OSError as error:
             print(error)
 
-        self.doc.save("{}/{}.docx".format(path, self.FolderTitle))
+        self.doc.save("{}/{}.docx".format(path, self.FileTitle))
 
 
 class FormateText():
@@ -132,6 +132,7 @@ class FormateText():
         commandKeys = self.command_flags.keys()
         limit = len(self.text) - 1
         newParagraph = False
+        delParagraph = False
 
         for i, str in enumerate(self.text):
             if "vírgula" in str.lower():
@@ -161,8 +162,12 @@ class FormateText():
                     del(self.text[i])
                     self.text[i - 1] += self.command_action[command][1]
                     self.command_flags[command] = False
+            elif "apagar" in str.lower() and i + 1 <= limit:
+                command = self.text[i + 1].lower()
+                if command == "parágrafo":
+                    delParagraph = True
 
-        return([" ".join(self.text), newParagraph])
+        return([" ".join(self.text), newParagraph, delParagraph])
 
 
 class Menu(Screen):
@@ -234,18 +239,20 @@ class TextBoxContainer(Screen):
         self.ids.textBox.clear_widgets()
         self.path = App.get_running_app().user_data_dir + "/"
         self.readData()
-        Window.bind(on_keyboard=self.comeBack)
+        Window.bind(on_keyboard=self.keyInterrupt)
         for phease in self.pheases:
             self.ids.textBox.add_widget(LabelBox(text=" ".join(phease)))
 
-    def comeBack(self, window, key, *args) -> None:
+    def keyInterrupt(self, window, key, *args) -> None:
+        if key == 32:
+            self.initRecorder()
         if key == 27:
             App.get_running_app().root.current = "menu"
             return True
 
     def on_pre_leave(self, *args) -> None:
         super().on_pre_leave(*args)
-        Window.unbind(on_keyboard=self.comeBack)
+        Window.unbind(on_keyboard=self.keyInterrupt)
 
     def readData(self, *args) -> None:
         try:
@@ -262,7 +269,7 @@ class TextBoxContainer(Screen):
         hash = random.getrandbits(32)
         title = self.userInput.text or "doc_%08x" % hash
         document = DocumentBuilder()
-        document.folderTitle(title)
+        document.fileTitle(title)
 
         if self.switchValue:
             document.docTitle(title)
@@ -331,7 +338,8 @@ class TextBoxContainer(Screen):
         return True
 
     def message(self, msg, *args) -> None:
-        phease, newParagraph = FormateText(msg.split()).formate()
+        [phease, newParagraph, delParagraph] = FormateText(
+            msg.split()).formate()
         self.ids.image_mic.source = "icons/mic.png"
         textBoxTree = self.ids.textBox.children
         pheasesLen = len(self.pheases)
@@ -339,6 +347,8 @@ class TextBoxContainer(Screen):
         if newParagraph:
             self.ids.textBox.add_widget(LabelBox(text=phease))
             self.pheases.append([phease])
+        elif delParagraph:
+            self.ids.textBox.remove_widget(self.ids.textBox.children[0])
         elif len(textBoxTree) > 0:
             self.ids.textBox.children[0].text += " " + phease
             self.pheases[pheasesLen - 1].append(phease)
@@ -407,6 +417,9 @@ class Instructions(Screen):
         paragraph = ("[b]Novo parágrafo:[/b]\n\nPara adicionar um novo parágrafo"
                      " basta dizer [b]\"novo parágrafo\"[/b] e continuar falando o seu texto.")
 
+        delParagraph = ("[b]Apagar parágrafo:[/b]\n\nPara apagar o último parágrafo do seu texto"
+                        " basta dizer [b]\"apagar parágrafo\"[/b].")
+
         self.ids.textBoxIntructions.add_widget(LabelBox(
             text=title,
             underline=True,
@@ -433,6 +446,8 @@ class Instructions(Screen):
             LabelBox(text=underline, halign='justify'))
         self.ids.textBoxIntructions.add_widget(
             LabelBox(text=paragraph, halign='justify'))
+        self.ids.textBoxIntructions.add_widget(
+            LabelBox(text=delParagraph, halign='justify'))
 
 
 class UserInput(TextInput):
