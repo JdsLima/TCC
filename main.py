@@ -1,3 +1,4 @@
+from cgitb import text
 import os
 import json
 import random
@@ -285,6 +286,39 @@ class TextBoxContainer(Screen):
 
         document.builder()
         self.popup.dismiss()
+        Clock.schedule_once(self.createdDocPopup, 0.5)
+
+    def createdDocPopup(self, *args) -> bool:
+        so = platform.system()
+        home = ""
+
+        if so == "Windows":
+            home = Path.home() / "Documents"
+        elif so == "Linux":
+            home = Path.home() / "Documentos"
+
+        box = BoxLayout(orientation="horizontal", padding=10, spacing=10)
+        popup = Popup(
+            title="Sucesso!",
+            content=box,
+            size_hint=(None, None),
+            size=(sp(350), sp(100)),
+            pos_hint={"top": 0.9}
+        )
+
+        labelBox = BoxLayout(orientation="vertical")
+        label1 = Label(text="Documento salvo em:", bold=True, font_size='16sp')
+        label2 = Label(text=str(home) + '/Yumi')
+        labelBox.add_widget(label1)
+        labelBox.add_widget(label2)
+        box.add_widget(Image(source="icons/logo_com_nome.png"))
+        box.add_widget(labelBox)
+        animation = Animation(size=(sp(530), sp(150)),
+                              duration=0.3, t="out_back")
+        animation.start(popup)
+
+        popup.open()
+        return True
 
     def docPopup(self, *args, **kwargs) -> bool:
         self.switchValue = True
