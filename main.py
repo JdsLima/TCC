@@ -1,8 +1,3 @@
-from cgitb import text
-import os
-import json
-import random
-import platform
 from kivy.app import App
 from pathlib import Path
 from typing import Union
@@ -17,12 +12,14 @@ from kivy.uix.image import Image
 from kivy.uix.switch import Switch
 from kivy.core.window import Window
 from kivy.animation import Animation
+import os, sys, json, random, platform
 from kivy.uix.textinput import TextInput
 from kivy.uix.boxlayout import BoxLayout
 from kivy.properties import ListProperty
 from kivy.graphics import RoundedRectangle, Color
 from kivy.uix.behaviors.button import ButtonBehavior
 from kivy.uix.screenmanager import ScreenManager, Screen
+from kivy.resources import resource_add_path, resource_find
 
 Config.set('kivy', 'window_icon', 'icons/logo.png')
 Config.write()
@@ -536,4 +533,6 @@ class Yumi(App):
 
 
 if __name__ == '__main__':
+    if hasattr(sys, '_MEIPASS'):
+        resource_add_path(os.path.join(sys._MEIPASS))
     Yumi().run()
