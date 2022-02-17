@@ -4,6 +4,8 @@ from typing import Union
 from docx import Document
 from kivy.metrics import sp
 from kivy.clock import Clock
+import os, sys, json, random
+from functools import partial
 from kivy.config import Config
 import speech_recognition as sr
 from kivy.uix.popup import Popup
@@ -12,7 +14,6 @@ from kivy.uix.image import Image
 from kivy.uix.switch import Switch
 from kivy.core.window import Window
 from kivy.animation import Animation
-import os, sys, json, random, platform
 from kivy.uix.textinput import TextInput
 from kivy.uix.boxlayout import BoxLayout
 from kivy.properties import ListProperty
@@ -80,23 +81,19 @@ class DocumentBuilder():
                     str = ""
 
             runner = p.add_run(str + " ")
-            if command_flags["negrito"] == True:
+            if command_flags["negrito"]:
                 runner.bold = True
-            if command_flags["itálico"] == True:
+            if command_flags["itálico"]:
                 runner.italic = True
-            if command_flags["sublinhado"] == True:
+            if command_flags["sublinhado"]:
                 runner.underline = True
 
-    def builder(self) -> None:
+    def builder(self) -> str:
         self.doc.add_page_break()
         path, home = "", ""
-        so = platform.system()
 
-        if so == "Windows":
-            home = Path.home() / "Documents"
-        elif so == "Linux":
-            home = Path.home() / "Documentos"
-
+        # altere esta linha para o nome da pasta na qual você quer salvar
+        home = Path.home() / "Documentos"
         path = os.path.join(home, "Yumi")
 
         try:
@@ -105,6 +102,7 @@ class DocumentBuilder():
             print(error)
 
         self.doc.save("{}/{}.docx".format(path, self.FileTitle))
+        return path
 
 
 class FormateText():
@@ -126,11 +124,9 @@ class FormateText():
     )
 
     def formate(self) -> Union[str, bool]:
+        newParagraph, delParagraph, correct = False, False, False
         commandKeys = self.command_flags.keys()
         limit = len(self.text) - 1
-        newParagraph = False
-        delParagraph = False
-        correct = False
 
         for i, str in enumerate(self.text):
             if "vírgula" in str.lower():
@@ -187,7 +183,9 @@ class Menu(Screen):
         )
         buttons = BoxLayout(padding=sp(5), spacing=sp(10))
         exitButton = RoundButton(
-            text="Sim", on_release=App.get_running_app().stop)
+            text="Sim", 
+            on_release=App.get_running_app().stop
+        )
         closeButton = RoundButton(text="Não", on_release=popup.dismiss)
 
         buttons.add_widget(exitButton)
@@ -195,8 +193,12 @@ class Menu(Screen):
         box.add_widget(Image(source="icons/warning.png"))
         box.add_widget(buttons)
 
-        animation = Animation(size=(sp(300), sp(200)),
-                              duration=0.3, t="out_back")
+        animation = Animation(
+            size=(sp(300), 
+            sp(200)),
+            duration=0.3, 
+            t="out_back"
+        )
         animation.start(popup)
         popup.open()
 
@@ -233,7 +235,7 @@ class RoundButton(ButtonBehavior, Label):
             RoundedRectangle(pos=self.pos, size=self.size, radius=[20])
 
 
-class TextBoxContainer(Screen):
+class Transcription(Screen):
     pheases = [[]]
     path = ''
 
@@ -281,18 +283,12 @@ class TextBoxContainer(Screen):
         for textList in self.pheases:
             document.newParagraph(textList)
 
-        document.builder()
+        path = document.builder()
         self.popup.dismiss()
-        Clock.schedule_once(self.createdDocPopup, 0.5)
+        Clock.schedule_once(partial(self.createdDocPopup, path), 0.5)
 
-    def createdDocPopup(self, *args) -> bool:
-        so = platform.system()
-        home = ""
-
-        if so == "Windows":
-            home = Path.home() / "Documents"
-        elif so == "Linux":
-            home = Path.home() / "Documentos"
+    def createdDocPopup(self, path, *args) -> bool:
+        home = path
 
         box = BoxLayout(orientation="horizontal", padding=10, spacing=10)
         popup = Popup(
@@ -305,13 +301,17 @@ class TextBoxContainer(Screen):
 
         labelBox = BoxLayout(orientation="vertical")
         label1 = Label(text="Documento salvo em:", bold=True, font_size='16sp')
-        label2 = Label(text=str(home) + '/Yumi')
+        label2 = Label(text=str(home))
         labelBox.add_widget(label1)
         labelBox.add_widget(label2)
         box.add_widget(Image(source="icons/logo_com_nome.png"))
         box.add_widget(labelBox)
-        animation = Animation(size=(sp(530), sp(150)),
-                              duration=0.3, t="out_back")
+        animation = Animation(
+            size=(sp(530), 
+            sp(150)),
+            duration=0.3, 
+            t="out_back"
+        )
         animation.start(popup)
 
         popup.open()
@@ -347,12 +347,58 @@ class TextBoxContainer(Screen):
         box.add_widget(box2)
         box.add_widget(buttons)
 
-        animation = Animation(size=(sp(320), sp(220)),
-                              duration=0.3, t="out_back")
+        animation = Animation(
+            size=(sp(320), 
+            sp(220)),
+            duration=0.3, 
+            t="out_back"
+        )
         animation.start(self.popup)
         self.popup.open()
 
         return True
+    
+    def newParagraphText(self, phease):
+        self.ids.textBox.add_widget(LabelBox(text=phease))
+        self.pheases.append([phease])
+
+    def delParagraphText(self):
+        self.pheases.pop()
+        self.ids.textBox.remove_widget(self.ids.textBox.children[0])
+
+    def correctPheaseText(self, phease, pheasesLen):
+        list_index = pheasesLen - 1
+        self.pheases[list_index].append(phease)
+        aux_list = self.pheases[list_index]
+        aux_list.pop(len(aux_list) - 2)
+        self.pheases[list_index] = aux_list
+        self.ids.textBox.children[0].text = " ".join(aux_list)
+
+    def message(self, msg, *args) -> None:
+        [phease, newParagraph, delParagraph, correct] = FormateText(
+            msg.split()).formate()
+        self.ids.image_mic.source = "icons/mic.png"
+        textBoxTree = self.ids.textBox.children
+        pheasesLen = len(self.pheases)
+
+        if newParagraph:
+            self.newParagraphText(phease)
+        elif delParagraph:
+            self.delParagraphText()
+        elif correct:
+            self.correctPheaseText(phease, pheasesLen)
+        elif len(textBoxTree) > 0:
+            self.ids.textBox.children[0].text += " " + phease
+            self.pheases[pheasesLen - 1].append(phease)
+        else:
+            self.ids.textBox.add_widget(LabelBox(text=phease))
+            self.pheases[pheasesLen - 1].append(phease)
+
+        self.saveData()
+
+        # print("Lista de frases:\n",self.pheases)
+        # print("frase antes das mudanças:\n", msg)
+        # print("frase pré-processada:\n", phease)
 
     def messageError(self, msg, *args) -> bool:
         self.ids.image_mic.source = "icons/mic.png"
@@ -367,45 +413,16 @@ class TextBoxContainer(Screen):
         labelMsg = Label(text=msg, bold=True, font_size='16sp')
         box.add_widget(Image(source="icons/logo.png"))
         box.add_widget(labelMsg)
-        animation = Animation(size=(sp(330), sp(200)),
-                              duration=0.3, t="out_back")
+        animation = Animation(
+            size=(sp(330), 
+            sp(200)),
+            duration=0.3, 
+            t="out_back"
+        )
         animation.start(popup)
 
         popup.open()
         return True
-
-    def message(self, msg, *args) -> None:
-        [phease, newParagraph, delParagraph, correct] = FormateText(
-            msg.split()).formate()
-        self.ids.image_mic.source = "icons/mic.png"
-        textBoxTree = self.ids.textBox.children
-        pheasesLen = len(self.pheases)
-
-        if newParagraph:
-            self.ids.textBox.add_widget(LabelBox(text=phease))
-            self.pheases.append([phease])
-        elif delParagraph:
-            self.pheases.pop()
-            self.ids.textBox.remove_widget(self.ids.textBox.children[0])
-        elif correct:
-            list_index = pheasesLen - 1
-            self.pheases[list_index].append(phease)
-            aux_list = self.pheases[list_index]
-            aux_list.pop(len(aux_list) - 2)
-            self.pheases[list_index] = aux_list
-            self.ids.textBox.children[0].text = " ".join(aux_list)
-        elif len(textBoxTree) > 0:
-            self.ids.textBox.children[0].text += " " + phease
-            self.pheases[pheasesLen - 1].append(phease)
-        else:
-            self.ids.textBox.add_widget(LabelBox(text=phease))
-            self.pheases[pheasesLen - 1].append(phease)
-
-        # self.saveData()
-
-        # print("Lista de frases:\n",self.pheases)
-        # print("frase antes das mudanças:\n", msg)
-        # print("frase pré-processada:\n", phease)
 
     def listen(self, *args) -> None:
         with m as source:

@@ -4,8 +4,8 @@
     Menu:
         name: "menu"
 
-    TextBoxContainer:
-        name: "textBoxContainer"
+    Transcription:
+        name: "transcription"
 
     Instructions:
         name: "instructions"
@@ -31,7 +31,7 @@
             size_hint_y: None
             height: "60sp"
             on_release: 
-                app.root.current = "textBoxContainer"
+                app.root.current = "transcription"
                 root.manager.transition.direction = "left"
 
         RoundButton:
@@ -50,7 +50,7 @@
             height: "60sp"
             on_release: root.confirm_exit()
 
-<TextBoxContainer>:
+<Transcription>:
     BoxLayout:
         orientation: 'vertical'
         canvas:
