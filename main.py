@@ -236,7 +236,7 @@ class RoundButton(ButtonBehavior, Label):
 
 
 class Transcription(Screen):
-    pheases = [[]]
+    pheases = []
     path = ''
 
     def on_pre_enter(self, *args) -> None:
@@ -392,7 +392,7 @@ class Transcription(Screen):
             self.pheases[pheasesLen - 1].append(phease)
         else:
             self.ids.textBox.add_widget(LabelBox(text=phease))
-            self.pheases[pheasesLen - 1].append(phease)
+            self.pheases.append([phease])
 
         self.saveData()
 
